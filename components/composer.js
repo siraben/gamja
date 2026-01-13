@@ -185,7 +185,13 @@ export default class Composer extends Component {
 			promises.push(this.uploadFile(file));
 		}
 
-		let urls = await Promise.all(promises);
+		let urls;
+		try {
+			urls = await Promise.all(promises);
+		} catch (err) {
+			this.props.onError(new Error("Failed to upload files", { cause: err }));
+			return;
+		}
 
 		this.setState((state) => {
 			if (state.text) {

@@ -220,6 +220,7 @@ export default class App extends Component {
 		this.handleAddNetworkClick = this.handleAddNetworkClick.bind(this);
 		this.handleNetworkSubmit = this.handleNetworkSubmit.bind(this);
 		this.handleNetworkRemove = this.handleNetworkRemove.bind(this);
+		this.showError = this.showError.bind(this);
 		this.handleDismissError = this.handleDismissError.bind(this);
 		this.handleAuthSubmit = this.handleAuthSubmit.bind(this);
 		this.handleRegisterSubmit = this.handleRegisterSubmit.bind(this);
@@ -2292,6 +2293,7 @@ export default class App extends Component {
 				client=${activeClient}
 				readOnly=${composerReadOnly}
 				onSubmit=${this.handleComposerSubmit}
+				onError=${this.showError}
 				autocomplete=${this.autocomplete}
 				commandOnly=${commandOnly}
 				maxLen=${privmsgMaxLen}
