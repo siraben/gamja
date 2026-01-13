@@ -12,7 +12,7 @@
     "@parcel/transformer-webmanifest": "^2.0.0",
     "@stylistic/eslint-plugin": "^5.1.0",
     "eslint": "^9.11.1",
-    "globals": "^16.0.0",
+    "globals": "^17.0.0",
     "node-static": "^0.7.11",
     "parcel": "^2.0.0",
     "split": "^1.0.1",
