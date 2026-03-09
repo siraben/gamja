@@ -611,7 +611,7 @@ export const State = {
 				if (buf.server !== serverID) {
 					return;
 				}
-				let membership = members.get(msg.prefix.name);
+				let membership = buf.members.get(msg.prefix.name);
 				if (membership === undefined) {
 					return;
 				}
