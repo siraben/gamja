@@ -1,12 +1,10 @@
+import { defineConfig, globalIgnores } from "eslint/config";
 import globals from "globals";
 import js from "@eslint/js";
 import stylistic from "@stylistic/eslint-plugin";
 
-export default [
-	{
-		ignores: ["dist/"],
-	},
-	js.configs.recommended,
+export default defineConfig([
+	globalIgnores(["dist/"]),
 	{
 		languageOptions: {
 			globals: {
@@ -14,7 +12,8 @@ export default [
 				"process": "readonly",
 			},
 		},
-		plugins: { "@stylistic": stylistic },
+		plugins: { js, "@stylistic": stylistic },
+		extends: ["js/recommended"],
 		rules: {
 			"no-case-declarations": "off",
 			"no-unused-vars": ["error", {
@@ -53,4 +52,4 @@ export default [
 			"@stylistic/array-bracket-newline": ["warn", "consistent"],
 		},
 	},
-];
+]);
