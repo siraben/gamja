@@ -1,4 +1,5 @@
 import { ReceiptType, Unread } from "./state.js";
+import debounce from "./lib/debounce.js";
 
 const PREFIX = "gamja_";
 
@@ -27,17 +28,6 @@ class Item {
 export const autoconnect = new Item("autoconnect");
 export const naggedProtocolHandler = new Item("naggedProtocolHandler");
 export const settings = new Item("settings");
-
-function debounce(f, delay) {
-	let timeout = null;
-	return (...args) => {
-		clearTimeout(timeout);
-		timeout = setTimeout(() => {
-			timeout = null;
-			f(...args);
-		}, delay);
-	};
-}
 
 export class Buffer {
 	raw = new Item("buffers");
