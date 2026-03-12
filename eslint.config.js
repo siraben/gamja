@@ -1,11 +1,13 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import globals from "globals";
+import css from "@eslint/css";
 import js from "@eslint/js";
 import stylistic from "@stylistic/eslint-plugin";
 
 export default defineConfig([
 	globalIgnores(["dist/"]),
 	{
+		files: ["**/*.js"],
 		languageOptions: {
 			globals: {
 				...globals.browser,
@@ -50,6 +52,16 @@ export default defineConfig([
 			}],
 			"@stylistic/array-bracket-spacing": ["warn", "never"],
 			"@stylistic/array-bracket-newline": ["warn", "consistent"],
+		},
+	},
+	{
+		files: ["**/*.css"],
+		language: "css/css",
+		plugins: { css },
+		extends: ["css/recommended"],
+		rules: {
+			"css/use-baseline": "off",
+			"css/font-family-fallbacks": "off",
 		},
 	},
 ]);
