@@ -1,4 +1,5 @@
 import { Component } from "../lib/index.js";
+import debounce from "../lib/debounce.js";
 
 let store = new Map();
 
@@ -6,7 +7,11 @@ export default class ScrollManager extends Component {
 	constructor(props) {
 		super(props);
 
-		this.handleScroll = this.handleScroll.bind(this);
+		this.handleScroll = debounce(this.handleScroll.bind(this), 100);
+		this.handleResize = this.handleResize.bind(this);
+
+		this.stickToBottom = true;
+		this.resizeObserver = new ResizeObserver(this.handleResize);
 	}
 
 	isAtBottom() {
@@ -48,6 +53,8 @@ export default class ScrollManager extends Component {
 			}
 		}
 
+		this.stickToBottom = !stickToKey;
+
 		if (target.scrollTop === 0) {
 			this.props.onScrollTop();
 		}
@@ -57,11 +64,20 @@ export default class ScrollManager extends Component {
 		if (this.props.target.current.scrollTop === 0) {
 			this.props.onScrollTop();
 		}
+
+		this.stickToBottom = this.isAtBottom();
+	}
+
+	handleResize() {
+		if (this.stickToBottom && this.props.target.current.firstChild) {
+			this.props.target.current.firstChild.scrollIntoView({ block: "end" });
+		}
 	}
 
 	componentDidMount() {
 		this.restoreScrollPosition();
 		this.props.target.current.addEventListener("scroll", this.handleScroll);
+		this.resizeObserver.observe(this.props.target.current);
 	}
 
 	getSnapshotBeforeUpdate(prevProps) {
@@ -78,6 +94,7 @@ export default class ScrollManager extends Component {
 	}
 
 	componentWillUnmount() {
+		this.resizeObserver.unobserve(this.props.target.current);
 		this.props.target.current.removeEventListener("scroll", this.handleScroll);
 		this.saveScrollPosition(this.props.scrollKey);
 	}
