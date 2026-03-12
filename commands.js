@@ -347,7 +347,7 @@ const commands = [
 			try {
 				msg = irc.parseMessage(args.join(" "));
 			} catch (err) {
-				throw new Error("Failed to parse IRC command: " + err.message);
+				throw new Error("Failed to parse IRC command", { cause: err });
 			}
 			getActiveClient(app).send(msg);
 		},
