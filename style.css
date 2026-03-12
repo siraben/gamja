@@ -207,7 +207,7 @@ button.danger:hover {
 	grid-column: 1;
 	max-height: 20vh;
 	overflow-y: auto;
-	word-break: break-word;
+	overflow-wrap: break-word;
 }
 
 #buffer-header .actions {
