@@ -64,5 +64,5 @@ site irc.example.org/socket {
 
 [soju]: https://soju.im
 [webircgateway]: https://github.com/kiwiirc/webircgateway
-[kimchi]: https://sr.ht/~emersion/kimchi/
+[kimchi]: https://codeberg.org/emersion/kimchi
 [configuration file]: config-file.md

@@ -48,7 +48,7 @@ Copyright (C) 2020 The gamja Contributors
 
 [gamja]: https://codeberg.org/emersion/gamja
 [Codeberg]: https://codeberg.org/emersion/gamja
-[issue tracker]: https://todo.sr.ht/~emersion/gamja
+[issue tracker]: https://codeberg.org/emersion/gamja/issues
 [Parcel]: https://parceljs.org
 [configure an HTTP server]: doc/setup.md
 [configuration file]: doc/config-file.md
