@@ -1,7 +1,11 @@
+import * as fs from "fs/promises";
 import * as http from "http";
+import * as path from "path";
+import * as stream from "stream/promises";
 import * as tls from "tls";
+
+import mime from "mime";
 import split from "split";
-import { Server as StaticServer } from "node-static";
 import { WebSocketServer } from "ws";
 
 const WS_BAD_GATEWAY = 1014;
@@ -34,10 +38,51 @@ while (args.length > 0 && args[0].startsWith("-")) {
 }
 remoteHost = args[0];
 
-let staticServer = new StaticServer(".");
+async function serveFile(res, filename) {
+	let contentType = mime.getType(filename);
+	if (contentType?.startsWith("text/")) {
+		contentType += "; charset=utf-8";
+	}
+	if (contentType) {
+		res.setHeader("Content-Type", contentType);
+	} else {
+		res.removeHeader("Content-Type");
+	}
 
-let server = http.createServer((req, res) => {
-	staticServer.serve(req, res);
+	let file;
+	try {
+		file = await fs.open(filename);
+		await stream.pipeline(file.createReadStream(), res, { end: false });
+		res.end(); // only end stream if pipeline was successful
+	} finally {
+		await file?.close();
+	}
+}
+
+let server = http.createServer(async (req, res) => {
+	let url = new URL(req.url, "http://localhost");
+	let filename = path.join(".", url.pathname);
+
+	try {
+		try {
+			await serveFile(res, filename);
+		} catch (err) {
+			if (err.code === "EISDIR") {
+				await serveFile(res, path.join(filename, "index.html"));
+			} else {
+				throw err;
+			}
+		}
+	} catch (err) {
+		if (err.code === "ENOENT") {
+			res.statusCode = 404;
+			res.end("Not found");
+		} else {
+			console.error(err);
+			res.statusCode = 500;
+			res.end("Internal server error");
+		}
+	}
 });
 
 if (remoteHost) {
