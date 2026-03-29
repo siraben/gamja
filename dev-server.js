@@ -1,8 +1,8 @@
-import * as fs from "fs/promises";
-import * as http from "http";
-import * as path from "path";
-import * as stream from "stream/promises";
-import * as tls from "tls";
+import * as fs from "node:fs/promises";
+import * as http from "node:http";
+import * as path from "node:path";
+import * as stream from "node:stream/promises";
+import * as tls from "node:tls";
 
 import mime from "mime";
 import split from "split";
