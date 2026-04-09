@@ -192,9 +192,9 @@ function compareBuffers(state, a, b) {
 }
 
 function updateMembership(membership, letter, add, client) {
-	let prefix = client.isupport.prefix();
+	let membershipModes = client.isupport.membershipModes();
 
-	let prefixPrivs = new Map(irc.parseMembershipModes(prefix).map((membership, i) => {
+	let prefixPrivs = new Map(membershipModes.map((membership, i) => {
 		return [membership.prefix, i];
 	}));
 
@@ -662,8 +662,8 @@ export const State = {
 				return; // TODO: handle user mode changes too
 			}
 
-			let prefix = client.isupport.prefix();
-			let prefixByMode = new Map(irc.parseMembershipModes(prefix).map((membership) => {
+			let membershipModes = client.isupport.membershipModes();
+			let prefixByMode = new Map(membershipModes.map((membership) => {
 				return [membership.mode, membership.prefix];
 			}));
 
