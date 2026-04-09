@@ -479,12 +479,13 @@ export const State = {
 			break;
 		case irc.RPL_ENDOFNAMES:
 			channel = msg.params[1];
+			let membershipPrefixes = client.isupport.membershipModes().map(({ prefix }) => prefix);
 			return updateBuffer(channel, (buf) => {
 				let members = new irc.CaseMapMap(null, buf.members.caseMap);
 				msg.list.forEach((namreply) => {
 					let membersList = namreply.params[3].split(" ");
 					membersList.forEach((s) => {
-						let member = irc.parseTargetPrefix(s);
+						let member = irc.parseTargetPrefix(s, membershipPrefixes);
 						members.set(member.name, member.prefix);
 					});
 				});
