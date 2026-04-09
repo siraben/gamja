@@ -340,6 +340,7 @@ export const State = {
 			supportsAccountRegistration: false,
 			reliableUserAccounts: false,
 			statusMsg: null, // from ISUPPORT STATUSMSG
+			membershipModes: null, // from ISUPPORT PREFIX
 			isBouncer: false,
 			bouncerNetID: null,
 		});
@@ -447,6 +448,7 @@ export const State = {
 						users: new irc.CaseMapMap(server.users, client.cm),
 						reliableUserAccounts: client.isupport.monitor() > 0 && client.isupport.whox(),
 						statusMsg: client.isupport.statusMsg(),
+						membershipModes: client.isupport.membershipModes(),
 						bouncerNetID: client.isupport.bouncerNetID(),
 					};
 				}),

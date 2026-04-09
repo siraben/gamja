@@ -260,18 +260,18 @@ class LogLine extends Component {
 				}
 
 				// Channel membership modes
-				let membership;
-				for (let prefix in irc.STD_MEMBERSHIP_MODES) {
-					if (irc.STD_MEMBERSHIP_MODES[prefix] === mode) {
-						membership = irc.STD_MEMBERSHIP_NAMES[prefix];
+				let membershipName;
+				for (let membership of server.membershipModes) {
+					if (membership.mode === mode) {
+						membershipName = irc.STD_MEMBERSHIP_NAMES[membership.prefix];
 						break;
 					}
 				}
-				if (membership && arg) {
+				if (membershipName && arg) {
 					let verb = plusMinus === "+" ? "granted" : "revoked";
 					let preposition = plusMinus === "+" ? "to" : "from";
 					content = html`
-						${user} has ${verb} ${membership} privileges ${preposition} ${createNick(arg)}
+						${user} has ${verb} ${membershipName} privileges ${preposition} ${createNick(arg)}
 					`;
 					break;
 				}
