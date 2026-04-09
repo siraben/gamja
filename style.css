@@ -470,6 +470,7 @@ details summary[role="button"] {
 	text-align: center;
 	text-transform: lowercase;
 	font-variant: small-caps;
+	user-select: none;
 }
 #buffer .separator::before, #buffer .separator::after {
 	content: "";
