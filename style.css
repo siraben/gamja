@@ -296,6 +296,9 @@ button.danger:hover {
 	color: var(--gray);
 }
 
+.membership { /* fallback */
+	color: purple;
+}
 .membership.owner {
 	color: red;
 }
