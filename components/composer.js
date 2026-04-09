@@ -1,5 +1,27 @@
 import { html, Component, createRef } from "../lib/index.js";
 
+const uploadIcon = html`
+	<svg width="1em" height="1em" viewBox="0 0 24 24"
+		fill="none" xmlns="http://www.w3.org/2000/svg">
+		<path d="M12 5L12 19M5 12L19 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+	</svg>
+`;
+
+const spinnerIcon = html`
+	<svg class="spinner-icon" width="1em" height="1em"
+		viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+		<path d="M12 6a6 6 0 0 1 0 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+	</svg>
+`;
+
+const xIcon = html`
+	<svg class="x-icon" width="1em" height="1em" viewBox="0 0 24 24"
+		fill="none" xmlns="http://www.w3.org/2000/svg">
+		<path d="M7 7L17 17M17 7L7 17" stroke="currentColor" stroke-width="1.5"
+			stroke-linecap="round" stroke-linejoin="round"/>
+	</svg>
+`;
+
 function encodeContentDisposition(filename) {
 	// Encode filename according to RFC 5987 if necessary. Note,
 	// encodeURIComponent will percent-encode a superset of attr-char.
@@ -14,9 +36,14 @@ function encodeContentDisposition(filename) {
 export default class Composer extends Component {
 	state = {
 		text: "",
+		uploading: false,
+		dragging: false,
 	};
 	textInput = createRef();
+	fileInput = createRef();
 	lastAutocomplete = null;
+	uploadCount = 0;
+	uploadAbortController = null;
 
 	constructor(props) {
 		super(props);
@@ -25,10 +52,15 @@ export default class Composer extends Component {
 		this.handleSubmit = this.handleSubmit.bind(this);
 		this.handleInputKeyDown = this.handleInputKeyDown.bind(this);
 		this.handleInputPaste = this.handleInputPaste.bind(this);
+		this.handleDragEnter = this.handleDragEnter.bind(this);
+		this.handleDragLeave = this.handleDragLeave.bind(this);
 		this.handleDragOver = this.handleDragOver.bind(this);
 		this.handleDrop = this.handleDrop.bind(this);
 		this.handleWindowKeyDown = this.handleWindowKeyDown.bind(this);
 		this.handleWindowPaste = this.handleWindowPaste.bind(this);
+		this.handleUploadClick = this.handleUploadClick.bind(this);
+		this.handleCancelClick = this.handleCancelClick.bind(this);
+		this.handleFileInputChange = this.handleFileInputChange.bind(this);
 	}
 
 	handleInput(event) {
@@ -135,7 +167,7 @@ export default class Composer extends Component {
 		return client && client.isupport.filehost() && !this.props.readOnly;
 	}
 
-	async uploadFile(file) {
+	async uploadFile(file, signal) {
 		let client = this.props.client;
 		let endpoint = client.isupport.filehost();
 
@@ -158,13 +190,12 @@ export default class Composer extends Component {
 			headers["Authorization"] = auth;
 		}
 
-		// TODO: show a loading UI while uploading
-		// TODO: show a cancel button
 		let resp = await fetch(endpoint, {
 			method: "POST",
 			body: file,
 			headers,
 			credentials: "include",
+			signal,
 		});
 
 		if (!resp.ok) {
@@ -180,17 +211,32 @@ export default class Composer extends Component {
 	}
 
 	async uploadFileList(fileList) {
+		if (!this.uploadAbortController) {
+			this.uploadAbortController = new AbortController();
+		}
+		let signal = this.uploadAbortController.signal;
+		this.uploadCount++;
+		this.setState({ uploading: true });
+
 		let promises = [];
 		for (let file of fileList) {
-			promises.push(this.uploadFile(file));
+			promises.push(this.uploadFile(file, signal));
 		}
 
 		let urls;
 		try {
 			urls = await Promise.all(promises);
 		} catch (err) {
-			this.props.onError(new Error("Failed to upload files", { cause: err }));
+			if (!signal.aborted) {
+				this.props.onError(new Error("Failed to upload files", { cause: err }));
+			}
 			return;
+		} finally {
+			this.uploadCount--;
+			if (this.uploadCount === 0) {
+				this.uploadAbortController = null;
+				this.setState({ uploading: false });
+			}
 		}
 
 		this.setState((state) => {
@@ -213,17 +259,29 @@ export default class Composer extends Component {
 		await this.uploadFileList(event.clipboardData.files);
 	}
 
-	handleDragOver(event) {
-		if (event.dataTransfer.items.length === 0 || !this.canUploadFiles()) {
+	isDraggingFiles(event) {
+		return Array.from(event.dataTransfer.items).every((item) => item.kind === "file");
+	}
+
+	handleDragEnter(event) {
+		if (!this.canUploadFiles() || !this.isDraggingFiles(event)) {
 			return;
 		}
+		this.setState({ dragging: true });
+	}
 
-		for (let item of event.dataTransfer.items) {
-			if (item.kind !== "file") {
-				return;
-			}
+	handleDragLeave(event) {
+		// ignore spurious dragleave events triggered by moving over child elements
+		if (this.base.contains(event.relatedTarget)) {
+			return;
 		}
+		this.setState({ dragging: false });
+	}
 
+	handleDragOver(event) {
+		if (!this.canUploadFiles() || !this.isDraggingFiles(event)) {
+			return;
+		}
 		event.preventDefault();
 	}
 
@@ -235,7 +293,30 @@ export default class Composer extends Component {
 		event.preventDefault();
 		event.stopImmediatePropagation();
 
+		// dragleave does not fire after a drop, so reset manually.
+		this.setState({ dragging: false });
+		this.textInput.current.focus();
 		await this.uploadFileList(event.dataTransfer.files);
+	}
+
+	handleUploadClick(event) {
+		event.preventDefault();
+		this.textInput.current.focus();
+		this.fileInput.current.click();
+	}
+
+	handleCancelClick(event) {
+		event.preventDefault();
+		this.uploadAbortController.abort();
+	}
+
+	async handleFileInputChange(event) {
+		let files = event.target.files;
+		if (files.length === 0) {
+			return;
+		}
+		await this.uploadFileList(files);
+		event.target.value = "";
 	}
 
 	handleWindowKeyDown(event) {
@@ -329,14 +410,54 @@ export default class Composer extends Component {
 	}
 
 	render() {
-		let className = "";
+		let classes = [];
 		if (this.props.readOnly && !this.state.text) {
-			className = "read-only";
+			classes.push("read-only");
 		}
+		if (this.state.uploading) {
+			classes.push("uploading");
+		}
+		if (this.state.dragging) {
+			classes.push("dragging");
+		}
+		let className = classes.join(" ");
 
 		let placeholder = "Type a message";
 		if (this.props.commandOnly) {
 			placeholder = "Type a command (see /help)";
+		}
+
+		let uploadButton = null;
+		if (this.canUploadFiles()) {
+			uploadButton = html`
+				<div id="composer-buttons">
+					${this.state.uploading && html`
+						<button
+							type="button"
+							id="composer-spinner"
+							title="Cancel upload"
+							onClick=${this.handleCancelClick}
+						>
+							${spinnerIcon}${xIcon}
+						</button>
+					`}
+					<button
+						type="button"
+						id="composer-upload"
+						title="Upload file"
+						onClick=${this.handleUploadClick}
+					>
+						${uploadIcon}
+					</button>
+				</div>
+				<input
+					type="file"
+					ref=${this.fileInput}
+					multiple
+					style="display: none"
+					onChange=${this.handleFileInputChange}
+				/>
+			`;
 		}
 
 		return html`
@@ -345,6 +466,10 @@ export default class Composer extends Component {
 				class=${className}
 				onInput=${this.handleInput}
 				onSubmit=${this.handleSubmit}
+				onDragEnter=${this.handleDragEnter}
+				onDragLeave=${this.handleDragLeave}
+				onDragOver=${this.handleDragOver}
+				onDrop=${this.handleDrop}
 			>
 				<input
 					type="text"
@@ -356,10 +481,9 @@ export default class Composer extends Component {
 					enterkeyhint="send"
 					onKeyDown=${this.handleInputKeyDown}
 					onPaste=${this.handleInputPaste}
-					onDragOver=${this.handleDragOver}
-					onDrop=${this.handleDrop}
 					maxlength=${this.props.maxLen}
 				/>
+				${uploadButton}
 			</form>
 		`;
 	}

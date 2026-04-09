@@ -16,8 +16,11 @@
 	--danger-button-background-hover: #B20000;
 	--danger-button-border: #e3e3e3;
 
+	--buffer-button-background-hover: #e3e3e3;
+
 	--green: green;
 	--gray: #4a4a4a;
+	--red: #db2626;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -27,15 +30,19 @@
 		--sidebar-background: #131618;
 		--expander-background: #424446;
 		--expander-background-hover: #2a2d2f;
+
 		--button-background: #282879;
 		--button-background-hover: #00007C;
 		--button-border: #131618;
+
 		--danger-button-background: #B20000;
 		--danger-button-background-hover: red;
 		--danger-button-border: #131618;
+
+		--buffer-button-background-hover: #131618;
+
 		--green: #53b266;
 		--gray: #979797;
-
 		--red: #fb615b;
 	}
 }
@@ -321,19 +328,63 @@ button.danger:hover {
 	grid-row: 3;
 	grid-column: 2 / 3;
 	border-top: 1px solid var(--sidebar-background);
+	display: flex;
+	position: relative;
 }
-#composer input {
-	display: block;
+@keyframes composer-spinner {
+	from { transform: rotate(0deg); }
+	to { transform: rotate(360deg); }
+}
+#composer input[type="text"] {
+	flex: 1;
 	height: 35px;
-	width: 100%;
 	box-sizing: border-box;
 	padding: 10px;
 }
-#composer input, #composer input:focus {
+#composer input[type="text"], #composer input[type="text"]:focus {
 	border: none;
 	background: none;
 	outline: none;
 }
+#composer-buttons {
+	display: flex;
+	align-items: center;
+	padding-right: 4px;
+	gap: 1px;
+}
+#composer-buttons button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 3px;
+	border: none;
+	font-size: 1.25em;
+	color: inherit;
+	background: transparent;
+	border-radius: 3px;
+}
+#composer-buttons button:not([disabled]):hover {
+	background: var(--buffer-button-background-hover);
+}
+#composer-spinner .x-icon {
+	display: none;
+}
+#composer-spinner .spinner-icon {
+	display: block;
+	animation: composer-spinner 600ms linear infinite;
+}
+#composer-spinner:hover .spinner-icon {
+	display: none;
+}
+#composer-spinner:hover .x-icon {
+	display: block;
+	color: var(--red);
+}
+#composer.dragging {
+	outline: 1px dashed var(--main-color);
+	outline-offset: -1px;
+}
+
 #composer.read-only {
 	display: none;
 }
