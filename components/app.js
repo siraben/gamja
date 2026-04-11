@@ -158,6 +158,29 @@ function getLatestReceipt(bufferStore, server, type) {
 	return last;
 }
 
+function parseWindowHash(loc) {
+	if (loc.startsWith("#/")) {
+		loc = loc.substring(1);
+	}
+
+	let host, entity;
+	if (loc.startsWith("//")) {
+		loc = loc.substring(2);
+		let i = loc.indexOf("/");
+		if (i < 0) {
+			i = loc.length;
+		}
+		host = loc.substring(0, i);
+		loc = loc.substring(i);
+	}
+	if (loc.startsWith("/")) {
+		loc = loc.substring(1);
+	}
+	entity = loc;
+
+	return { host, entity };
+}
+
 let lastErrorID = 0;
 
 export default class App extends Component {
@@ -198,6 +221,10 @@ export default class App extends Component {
 	 * confirmation for security reasons.
 	 */
 	autoOpenURL = null;
+	/**
+	 * Initial focused buffer from window hash.
+	 */
+	initialRoute = null;
 	messageNotifications = new Set();
 	baseTitle = null;
 	lastFocusPingDate = null;
@@ -231,6 +258,7 @@ export default class App extends Component {
 		this.handleSettingsDisconnect = this.handleSettingsDisconnect.bind(this);
 		this.handleSwitchSubmit = this.handleSwitchSubmit.bind(this);
 		this.handleWindowFocus = this.handleWindowFocus.bind(this);
+		this.handleWindowHashChange = this.handleWindowHashChange.bind(this);
 
 		this.state.settings = {
 			...this.state.settings,
@@ -329,7 +357,11 @@ export default class App extends Component {
 		}
 
 		if (window.location.hash) {
-			autojoin = window.location.hash.split(",");
+			if (window.location.hash.startsWith("#/")) {
+				this.initialRoute = parseWindowHash(window.location.hash);
+			} else {
+				autojoin = window.location.hash.split(",");
+			}
 		}
 
 		this.config = config;
@@ -539,7 +571,7 @@ export default class App extends Component {
 	}
 
 	switchBuffer(id) {
-		let buf;
+		let buf, isInitialSwitch;
 		this.setState((state) => {
 			buf = State.getBuffer(state, id);
 			if (!buf) {
@@ -550,6 +582,8 @@ export default class App extends Component {
 			let stored = this.bufferStore.get({ name: buf.name, server: client.params });
 			let prevReadReceipt = getReceipt(stored, ReceiptType.READ);
 			let update = State.updateBuffer(state, buf.id, { prevReadReceipt });
+
+			isInitialSwitch = !state.activeBuffer;
 
 			return { activeBuffer: buf.id, ...update };
 		}, () => {
@@ -570,6 +604,12 @@ export default class App extends Component {
 				this.whoChannelBuffer(buf.name, buf.server);
 			}
 
+			if (!(isInitialSwitch && this.initialRoute)) {
+				// If this is the first switch and the hash is already
+				// populated, don't overwrite it - leave time for the client to
+				// connect and find the appropriate buffer.
+				this.updateWindowHash();
+			}
 			this.updateDocumentTitle();
 		});
 
@@ -649,6 +689,49 @@ export default class App extends Component {
 		title += parts.join(" · ");
 
 		document.title = title;
+	}
+
+	computeWindowHash() {
+		let buf = State.getBuffer(this.state, this.state.activeBuffer);
+		let server;
+		if (buf) {
+			server = this.state.servers.get(buf.server);
+		}
+		let bouncerNetwork;
+		if (server.bouncerNetID) {
+			bouncerNetwork = this.state.bouncerNetworks.get(server.bouncerNetID);
+		}
+
+		/* Syntax is one of:
+		 *
+		 *   #/                  server buffer without hostname
+		 *   #/<entity>          buffer without hostname
+		 *   #//<host>           server buffer with hostname
+		 *   #//[host]/<entity>  buffer with hostname
+		 */
+
+		let loc = "#";
+		if (bouncerNetwork) {
+			loc += "//" + bouncerNetwork.host;
+		}
+		if (buf) {
+			if (!bouncerNetwork && buf.name.startsWith("/")) {
+				loc += "//"; // for disambiguation
+			}
+			if (buf.type === BufferType.SERVER) {
+				if (loc === "#") {
+					loc += "/";
+				}
+			} else {
+				loc += "/" + buf.name;
+			}
+		}
+
+		return loc;
+	}
+
+	updateWindowHash() {
+		window.location = this.computeWindowHash();
 	}
 
 	prepareChatMessage(serverID, msg) {
@@ -1143,6 +1226,12 @@ export default class App extends Component {
 				// Roundtrip to ensure we've seen any server-initiated JOIN
 				// messages sent right after connection registration
 				client.ping().then(() => this.openURL(url));
+			} else if (this.initialRoute && serverHost === (this.initialRoute.host || "")) {
+				this.initialRoute = null;
+
+				// Roundtrip to ensure we've seen any server-initiated JOIN
+				// messages sent right after connection registration
+				client.ping().then(() => this.handleWindowHashChange());
 			}
 			break;
 		case "JOIN":
@@ -2016,15 +2105,56 @@ export default class App extends Component {
 		}
 	}
 
+	handleWindowHashChange() {
+		if (window.location.hash === this.computeWindowHash()) {
+			return;
+		}
+
+		let { host, entity } = parseWindowHash(window.location.hash);
+
+		let serverID;
+		if (host) {
+			let bouncerNetID = this.findBouncerNetIDByHost(host);
+			if (!bouncerNetID) {
+				console.error(`No network found with host "${host}"`);
+				return;
+			}
+
+			for (let [id, server] of this.state.servers) {
+				if (server.bouncerNetID === bouncerNetID) {
+					serverID = id;
+					break;
+				}
+			}
+		} else {
+			for (let [id, server] of this.state.servers) {
+				if (!server.bouncerNetID) {
+					serverID = id;
+					break;
+				}
+			}
+		}
+
+		let buf = State.getBuffer(this.state, { server: serverID, name: entity });
+		if (!buf) {
+			console.error(`No buffer found with entity "${entity || "<none>"}"`);
+			return;
+		}
+
+		this.switchBuffer(buf.id);
+	}
+
 	componentDidMount() {
 		this.baseTitle = document.title;
 		setupKeybindings(this);
 		window.addEventListener("focus", this.handleWindowFocus);
+		window.addEventListener("hashchange", this.handleWindowHashChange);
 	}
 
 	componentWillUnmount() {
 		document.title = this.baseTitle;
 		window.removeEventListener("focus", this.handleWindowFocus);
+		window.removeEventListener("hashchange", this.handleWindowHashChange);
 	}
 
 	render() {
