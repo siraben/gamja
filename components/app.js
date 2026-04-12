@@ -1137,8 +1137,12 @@ export default class App extends Component {
 
 			let serverHost = bouncerNetwork ? bouncerNetwork.host : "";
 			if (this.autoOpenURL && serverHost === this.autoOpenURL.host) {
-				this.openURL(this.autoOpenURL);
+				let url = this.autoOpenURL;
 				this.autoOpenURL = null;
+
+				// Roundtrip to ensure we've seen any server-initiated JOIN
+				// messages sent right after connection registration
+				client.ping().then(() => this.openURL(url));
 			}
 			break;
 		case "JOIN":
