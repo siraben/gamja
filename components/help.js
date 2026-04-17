@@ -61,6 +61,12 @@ function CommandsHelp() {
 
 export default function Help() {
 	return html`
+		<h3>About</h3>
+		<p>
+			<strong>gamja</strong> is licensed under <a href="https://www.gnu.org/licenses/agpl-3.0.en.html" target="_blank" rel="noreferrer">AGPLv3</a>.
+			Source code is available <a href="https://codeberg.org/emersion/gamja" target="_blank" rel="noreferrer">on Codeberg</a>.
+		</p>
+
 		<h3>Key bindings</h3>
 		<${KeyBindingsHelp}/>
 
