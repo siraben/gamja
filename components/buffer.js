@@ -344,7 +344,7 @@ class LogLine extends Component {
 				content = html`A new account has been created, you are now authenticated as ${account}`;
 				break;
 			case "VERIFICATION_REQUIRED":
-				content = html`A new account has been created, but you need to <a href="#" onClick=${handleVerifyClick}>verify it</a>: ${linkify(reason)}`;
+				content = html`A new account has been created, but you need to <a href="#" onClick=${handleVerifyClick}>verify it</a>: ${linkify(reason, onChannelClick)}`;
 				break;
 			}
 			break;
@@ -378,7 +378,7 @@ class LogLine extends Component {
 			if (irc.isError(msg.command) && msg.command !== irc.ERR_NOMOTD) {
 				lineClass = "error";
 			}
-			content = html`${msg.command} ${linkify(msg.params.join(" "))}`;
+			content = html`${msg.command} ${linkify(msg.params.join(" "), onChannelClick)}`;
 		}
 
 		if (!content) {
