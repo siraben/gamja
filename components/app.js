@@ -50,6 +50,7 @@ const configPromise = fetch("./config.json")
 	});
 
 const CHATHISTORY_MAX_SIZE = 4000;
+const CHATHISTORY_CONCURRENT_TARGETS = 2;
 const NOTIFICATION_DEDUPE_KEY = "gamja_notificationDedup";
 const NOTIFICATION_DEDUPE_TTL = 15 * 60 * 1000;
 
@@ -1496,6 +1497,62 @@ export default class App extends Component {
 		});
 	}
 
+	addHistoryMessages(serverID, messages) {
+		let entries = [];
+		for (let msg of messages) {
+			this.prepareChatMessage(serverID, msg);
+			let destBuffers = this.routeMessage(serverID, msg);
+			for (let bufName of destBuffers) {
+				entries.push({
+					buffer: { server: serverID, name: bufName },
+					message: msg,
+				});
+			}
+		}
+		if (entries.length === 0) {
+			return;
+		}
+		this.setState((state) => State.addMessages(state, entries));
+	}
+
+	updateBacklogUnread(serverID, target, messages, readReceipt) {
+		let client = this.clients.get(serverID);
+		let unread = Unread.NONE;
+		let unreadCount = 0;
+		for (let msg of messages) {
+			if (msg.command !== "PRIVMSG" && msg.command !== "NOTICE") {
+				continue;
+			}
+			if (isMessageBeforeReceipt(msg, readReceipt) || client.isMyNick(msg.prefix.name)) {
+				continue;
+			}
+			let targetName = msg.params[0];
+			if (msg.isHighlight || client.isMyNick(targetName)) {
+				unread = Unread.union(unread, Unread.HIGHLIGHT);
+			} else {
+				unread = Unread.union(unread, Unread.MESSAGE);
+			}
+			unreadCount++;
+		}
+		if (unreadCount === 0) {
+			return;
+		}
+
+		this.setBufferState({ server: serverID, name: target }, (buf) => {
+			unread = Unread.union(buf.unread, unread);
+			unreadCount += buf.unreadCount || 0;
+			return { unread, unreadCount };
+		}, () => {
+			this.bufferStore.put({
+				name: target,
+				server: client.params,
+				unread,
+				unreadCount,
+			});
+			this.updateDocumentTitle();
+		});
+	}
+
 	async fetchBacklog(serverID) {
 		let client = this.clients.get(serverID);
 		if (!client.caps.enabled.has("draft/chathistory")) {
@@ -1512,7 +1569,7 @@ export default class App extends Component {
 
 		let now = irc.formatDate(new Date());
 		let targets = await client.fetchHistoryTargets(now, lastReceipt.time);
-		targets.forEach(async (target) => {
+		let fetchTarget = async (target) => {
 			let from = lastReceipt;
 			let to = { time: now };
 
@@ -1547,13 +1604,16 @@ export default class App extends Component {
 				return;
 			}
 
-			for (let msg of result.messages) {
-				let destBuffers = this.routeMessage(serverID, msg);
-				for (let bufName of destBuffers) {
-					this.handleChatMessage(serverID, bufName, msg);
-				}
+			if (result.messages.length > 0) {
+				this.createBuffer(serverID, target.name);
+				this.addHistoryMessages(serverID, result.messages);
+				this.updateBacklogUnread(serverID, target.name, result.messages, readReceipt);
 			}
-		});
+		};
+
+		for (let i = 0; i < targets.length; i += CHATHISTORY_CONCURRENT_TARGETS) {
+			await Promise.all(targets.slice(i, i + CHATHISTORY_CONCURRENT_TARGETS).map(fetchTarget));
+		}
 	}
 
 	handleConnectSubmit(connectParams) {
@@ -2092,14 +2152,7 @@ export default class App extends Component {
 			});
 		}
 
-		for (let msg of result.messages) {
-			this.prepareChatMessage(buf.server, msg);
-			let destBuffers = this.routeMessage(buf.server, msg);
-			for (let bufName of destBuffers) {
-				let bufID = { server: buf.server, name: bufName };
-				this.setState((state) => State.addMessage(state, msg, bufID));
-			}
-		}
+		this.addHistoryMessages(buf.server, result.messages);
 	}
 
 	openDialog(name, data) {

@@ -246,6 +246,14 @@ let lastServerID = 0;
 let lastBufferID = 0;
 let lastMessageKey = 0;
 
+function assignMessageKey(msg) {
+	lastMessageKey++;
+	return {
+		...msg,
+		key: lastMessageKey,
+	};
+}
+
 export const State = {
 	create() {
 		return {
@@ -719,12 +727,40 @@ export const State = {
 		}
 	},
 	addMessage(state, msg, bufID) {
-		lastMessageKey++;
-		msg.key = lastMessageKey;
+		let keyedMsg = assignMessageKey(msg);
 
 		return State.updateBuffer(state, bufID, (buf) => {
-			let messages = insertMessage(buf.messages, msg);
+			let messages = insertMessage(buf.messages, keyedMsg);
 			return { messages };
 		});
+	},
+	addMessages(state, entries) {
+		let messagesByBuffer = new Map();
+		for (let entry of entries) {
+			let buf = State.getBuffer(state, entry.buffer);
+			if (!buf) {
+				continue;
+			}
+			let messages = messagesByBuffer.get(buf.id);
+			if (!messages) {
+				messages = [];
+				messagesByBuffer.set(buf.id, messages);
+			}
+			messages.push(assignMessageKey(entry.message));
+		}
+		if (messagesByBuffer.size === 0) {
+			return;
+		}
+
+		let buffers = new Map(state.buffers);
+		for (let [id, incoming] of messagesByBuffer) {
+			let buf = buffers.get(id);
+			let messages = buf.messages;
+			for (let msg of incoming) {
+				messages = insertMessage(messages, msg);
+			}
+			buffers.set(id, { ...buf, messages });
+		}
+		return { buffers };
 	},
 };
