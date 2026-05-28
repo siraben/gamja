@@ -1,6 +1,7 @@
 import { html, Component } from "../lib/index.js";
+import { FormField, FormActions } from "./form-field.js";
 
-export default class NetworkForm extends Component {
+export default class AuthForm extends Component {
 	state = {
 		username: "",
 		password: "",
@@ -32,19 +33,24 @@ export default class NetworkForm extends Component {
 	render() {
 		return html`
 			<form onInput=${this.handleInput} onSubmit=${this.handleSubmit}>
-				<label>
-					Username:<br/>
-					<input type="username" name="username" value=${this.state.username} required/>
-				</label>
-				<br/><br/>
-
-				<label>
-					Password:<br/>
-					<input type="password" name="password" value=${this.state.password} required autofocus/>
-				</label>
-				<br/><br/>
-
-				<button>Login</button>
+				<${FormField}
+					label="Username"
+					type="username"
+					name="username"
+					value=${this.state.username}
+					required
+				/>
+				<${FormField}
+					label="Password"
+					type="password"
+					name="password"
+					value=${this.state.password}
+					required
+					autofocus
+				/>
+				<${FormActions}>
+					<button>Login</button>
+				</>
 			</form>
 		`;
 	}

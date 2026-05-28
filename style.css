@@ -890,9 +890,93 @@ button.danger:hover {
 
 /* ---------- forms ---------- */
 
+.form-row {
+	display: block;
+	margin: 0 0 0.85rem;
+}
+
+.form-row-label {
+	display: block;
+	margin: 0 0 4px;
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--fg-muted);
+	letter-spacing: 0.005em;
+}
+
+.form-row-hint {
+	display: block;
+	margin: 4px 0 0;
+	font-size: 11.5px;
+	color: var(--fg-faint);
+	line-height: 1.4;
+}
+
+.form-row-inline {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	margin: 0 0 0.4rem;
+	color: var(--fg);
+	font-size: 13px;
+	font-weight: 400;
+}
+
+.form-row-inline input {
+	margin: 0;
+	flex: 0 0 auto;
+}
+
+.form-row-group {
+	margin: 0 0 0.85rem;
+	padding: 0;
+	border: none;
+}
+
+.form-row-group .form-row-inline {
+	margin-bottom: 0.25rem;
+}
+
+.form-row-group .form-row-inline:last-child {
+	margin-bottom: 0;
+}
+
+.form-row-group legend {
+	padding: 0;
+	margin-bottom: 6px;
+}
+
+.form-actions {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	gap: 8px;
+	justify-content: flex-end;
+	margin-top: 1rem;
+}
+
+.form-actions .danger {
+	margin-right: auto;
+}
+
+form details {
+	margin: 0.85rem 0;
+}
+
+form details summary {
+	color: var(--fg-muted);
+	font-size: 12px;
+	font-weight: 500;
+	padding: 4px 0;
+}
+
+form details[open] summary {
+	margin-bottom: 0.6rem;
+}
+
 form label {
 	display: block;
-	margin: 0.7rem 0 0.25rem;
+	margin: 0;
 	font-size: 12px;
 	font-weight: 500;
 	color: var(--fg-muted);
@@ -1078,10 +1162,6 @@ details summary[role="button"]:hover {
 
 .dialog h2 {
 	margin-top: 0;
-}
-
-.dialog form button:not([type="button"]) {
-	float: right;
 }
 
 .dialog form {

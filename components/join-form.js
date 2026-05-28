@@ -1,4 +1,5 @@
 import { html, Component } from "../lib/index.js";
+import { FormField, FormActions } from "./form-field.js";
 
 export default class JoinForm extends Component {
 	state = {
@@ -35,14 +36,17 @@ export default class JoinForm extends Component {
 	render() {
 		return html`
 			<form onInput=${this.handleInput} onSubmit=${this.handleSubmit}>
-				<label>
-					Channel:<br/>
-					<input type="text" name="channel" value=${this.state.channel} autofocus required/>
-				</label>
-				<br/>
-
-				<br/>
-				<button>Join</button>
+				<${FormField}
+					label="Channel"
+					type="text"
+					name="channel"
+					value=${this.state.channel}
+					autofocus
+					required
+				/>
+				<${FormActions}>
+					<button>Join</button>
+				</>
 			</form>
 		`;
 	}

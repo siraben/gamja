@@ -1,7 +1,8 @@
 import { html, Component } from "../lib/index.js";
 import linkify from "../lib/linkify.js";
+import { FormField, FormActions } from "./form-field.js";
 
-export default class RegisterForm extends Component {
+export default class VerifyForm extends Component {
 	state = {
 		code: "",
 	};
@@ -32,13 +33,18 @@ export default class RegisterForm extends Component {
 
 				<p>${linkify(this.props.message)}</p>
 
-				<label>
-					Verification code:<br/>
-					<input type="text" name="code" value=${this.state.code} required autofocus autocomplete="off"/>
-				</label>
-				<br/><br/>
-
-				<button>Verify account</button>
+				<${FormField}
+					label="Verification code"
+					type="text"
+					name="code"
+					value=${this.state.code}
+					required
+					autofocus
+					autocomplete="off"
+				/>
+				<${FormActions}>
+					<button>Verify account</button>
+				</>
 			</form>
 		`;
 	}

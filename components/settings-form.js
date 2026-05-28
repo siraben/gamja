@@ -1,5 +1,6 @@
 import { html, Component } from "../lib/index.js";
 import { BufferListSortMode } from "../state.js";
+import { FormField, FormActions } from "./form-field.js";
 
 export default class SettingsForm extends Component {
 	state = {};
@@ -53,92 +54,78 @@ export default class SettingsForm extends Component {
 						</button>
 					</div>
 				</div>
-				<br/><br/>
 			`;
 		}
 
 		return html`
 			<form onInput=${this.handleInput} onSubmit=${this.handleSubmit}>
-				<label>
-					<input
-						type="checkbox"
-						name="secondsInTimestamps"
-						checked=${this.state.secondsInTimestamps}
-					/>
-					Show seconds in time indicator
-				</label>
-				<br/><br/>
+				<${FormField}
+					type="checkbox"
+					name="secondsInTimestamps"
+					checked=${this.state.secondsInTimestamps}
+					label="Show seconds in time indicator"
+				/>
 
-				<label>
-					<input
+				<fieldset class="form-row-group">
+					<legend class="form-row-label">Chat events</legend>
+					<${FormField}
 						type="radio"
 						name="bufferEvents"
 						value="fold"
 						checked=${this.state.bufferEvents === "fold"}
+						label="Show and fold chat events"
 					/>
-					Show and fold chat events
-				</label>
-				<br/>
-				<label>
-					<input
+					<${FormField}
 						type="radio"
 						name="bufferEvents"
 						value="expand"
 						checked=${this.state.bufferEvents === "expand"}
+						label="Show and expand chat events"
 					/>
-					Show and expand chat events
-				</label>
-				<br/>
-				<label>
-					<input
+					<${FormField}
 						type="radio"
 						name="bufferEvents"
 						value="hide"
 						checked=${this.state.bufferEvents === "hide"}
+						label="Hide chat events"
 					/>
-					Hide chat events
-				</label>
-				<br/><br/>
+				</fieldset>
 
-				<label>
-					<input
+				<fieldset class="form-row-group">
+					<legend class="form-row-label">Buffer list order</legend>
+					<${FormField}
 						type="radio"
 						name="bufferListSort"
 						value=${BufferListSortMode.ALPHABETICAL}
 						checked=${this.state.bufferListSort === BufferListSortMode.ALPHABETICAL}
+						label="Sort buffers alphabetically"
 					/>
-					Sort buffers alphabetically
-				</label>
-				<br/>
-				<label>
-					<input
+					<${FormField}
 						type="radio"
 						name="bufferListSort"
 						value=${BufferListSortMode.UNREAD}
 						checked=${this.state.bufferListSort === BufferListSortMode.UNREAD}
+						label="Sort unread buffers first"
 					/>
-					Sort unread buffers first
-				</label>
-				<br/>
-				<label>
-					<input
+					<${FormField}
 						type="radio"
 						name="bufferListSort"
 						value=${BufferListSortMode.ACTIVITY}
 						checked=${this.state.bufferListSort === BufferListSortMode.ACTIVITY}
+						label="Sort by recent activity"
 					/>
-					Sort by recent activity
-				</label>
-				<br/><br/>
+				</fieldset>
 
 				${protocolHandler}
 
-				<button type="button" class="danger" onClick=${() => this.props.onDisconnect()}>
-					Disconnect
-				</button>
-				<button>
-					Close
-				</button>
+				<${FormActions}>
+					<button type="button" class="danger" onClick=${() => this.props.onDisconnect()}>
+						Disconnect
+					</button>
+					<button>
+						Close
+					</button>
+				</>
 			</form>
 		`;
 	}

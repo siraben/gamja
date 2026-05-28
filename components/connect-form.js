@@ -1,5 +1,6 @@
 import { html, Component, createRef } from "../lib/index.js";
 import linkify from "../lib/linkify.js";
+import { FormField, FormActions } from "./form-field.js";
 
 export default class ConnectForm extends Component {
 	state = {
@@ -86,17 +87,14 @@ export default class ConnectForm extends Component {
 		let serverURL = null;
 		if (!this.props.params || !this.props.params.url) {
 			serverURL = html`
-				<label>
-					Server URL:<br/>
-					<input
-						type="text"
-						name="url"
-						value=${this.state.url}
-						disabled=${disabled}
-						inputmode="url"
-					/>
-				</label>
-				<br/><br/>
+				<${FormField}
+					label="Server URL"
+					type="text"
+					name="url"
+					value=${this.state.url}
+					disabled=${disabled}
+					inputmode="url"
+				/>
 			`;
 		}
 
@@ -114,18 +112,15 @@ export default class ConnectForm extends Component {
 		let auth = null;
 		if (this.props.auth !== "disabled" && this.props.auth !== "external" && this.props.auth !== "oauth2") {
 			auth = html`
-				<label>
-					Password:<br/>
-					<input
-						type="password"
-						name="password"
-						value=${this.state.password}
-						disabled=${disabled}
-						required=${this.props.auth === "mandatory"}
-						placeholder=${this.props.auth !== "mandatory" ? "(optional)" : ""}
-					/>
-				</label>
-				<br/><br/>
+				<${FormField}
+					label="Password"
+					type="password"
+					name="password"
+					value=${this.state.password}
+					disabled=${disabled}
+					required=${this.props.auth === "mandatory"}
+					placeholder=${this.props.auth !== "mandatory" ? "(optional)" : ""}
+				/>
 			`;
 		}
 
@@ -134,15 +129,12 @@ export default class ConnectForm extends Component {
 		if (channels.length > 0) {
 			let s = channels.length > 1 ? "s" : "";
 			autojoin = html`
-				<label>
-					<input
-						type="checkbox"
-						name="autojoin"
-						checked=${this.state.autojoin}
-					/>
-					Auto-join channel${s} <strong>${channels.join(", ")}</strong>
-				</label>
-				<br/><br/>
+				<${FormField}
+					type="checkbox"
+					name="autojoin"
+					checked=${this.state.autojoin}
+					label=${html`Auto-join channel${s} <strong>${channels.join(", ")}</strong>`}
+				/>
 			`;
 		}
 
@@ -150,81 +142,60 @@ export default class ConnectForm extends Component {
 			<form onInput=${this.handleInput} onSubmit=${this.handleSubmit}>
 				<h2>Connect to IRC</h2>
 
-				<label>
-					Nickname:<br/>
-					<input
-						type="username"
-						name="nick"
-						value=${this.state.nick}
-						disabled=${disabled}
-						ref=${this.nickInput}
-						required
-						autofocus
-					/>
-				</label>
-				<br/><br/>
+				<${FormField}
+					label="Nickname"
+					type="username"
+					name="nick"
+					value=${this.state.nick}
+					disabled=${disabled}
+					inputRef=${this.nickInput}
+					required
+					autofocus
+				/>
 
 				${auth}
-
 				${autojoin}
 
-				<label>
-					<input
-						type="checkbox"
-						name="rememberMe"
-						checked=${this.state.rememberMe}
-						disabled=${disabled}
-					/>
-					Remember me
-				</label>
-				<br/><br/>
+				<${FormField}
+					type="checkbox"
+					name="rememberMe"
+					checked=${this.state.rememberMe}
+					disabled=${disabled}
+					label="Remember me"
+				/>
 
 				<details>
 					<summary role="button">Advanced options</summary>
-
-					<br/>
-
 					${serverURL}
-
-					<label>
-						Username:<br/>
-						<input
-							type="username"
-							name="username"
-							value=${this.state.username}
-							disabled=${disabled}
-							placeholder="Same as nickname"
-						/>
-					</label>
-					<br/><br/>
-
-					<label>
-						Real name:<br/>
-						<input
-							type="text"
-							name="realname"
-							value=${this.state.realname}
-							disabled=${disabled}
-							placeholder="Same as nickname"
-						/>
-					</label>
-					<br/><br/>
-
-					<label>
-						Server password:<br/>
-						<input
-							type="password"
-							name="pass"
-							value=${this.state.pass}
-							disabled=${disabled}
-							placeholder="None"
-						/>
-					</label>
-					<br/><br/>
+					<${FormField}
+						label="Username"
+						type="username"
+						name="username"
+						value=${this.state.username}
+						disabled=${disabled}
+						placeholder="Same as nickname"
+					/>
+					<${FormField}
+						label="Real name"
+						type="text"
+						name="realname"
+						value=${this.state.realname}
+						disabled=${disabled}
+						placeholder="Same as nickname"
+					/>
+					<${FormField}
+						label="Server password"
+						type="password"
+						name="pass"
+						value=${this.state.pass}
+						disabled=${disabled}
+						placeholder="None"
+					/>
 				</details>
 
-				<br/>
-				<button disabled=${disabled}>Connect</button>
+				<${FormActions}>
+					<button disabled=${disabled}>Connect</button>
+				</>
 
 				${status}
 			</form>

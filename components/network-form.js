@@ -1,4 +1,5 @@
 import { html, Component } from "../lib/index.js";
+import { FormField, FormActions } from "./form-field.js";
 
 const defaultParams = {
 	name: "",
@@ -72,76 +73,75 @@ export default class NetworkForm extends Component {
 		let autojoin = null;
 		if (this.props.autojoin) {
 			autojoin = html`
-				<label>
-					<input
-						type="checkbox"
-						name="autojoin"
-						checked=${this.state.autojoin}
-					/>
-					Auto-join channel <strong>${this.props.autojoin}</strong>
-				</label>
-				<br/><br/>
+				<${FormField}
+					type="checkbox"
+					name="autojoin"
+					checked=${this.state.autojoin}
+					label=${html`Auto-join channel <strong>${this.props.autojoin}</strong>`}
+				/>
 			`;
 		}
 
 		return html`
 			<form onInput=${this.handleInput} onSubmit=${this.handleSubmit}>
-				<label>
-					Hostname:<br/>
-					<input type="text" name="host" value=${this.state.host} autofocus required/>
-				</label>
-				<br/><br/>
+				<${FormField}
+					label="Hostname"
+					type="text"
+					name="host"
+					value=${this.state.host}
+					autofocus
+					required
+				/>
 
 				${autojoin}
 
 				<details>
 					<summary role="button">Advanced options</summary>
-
-					<br/>
-
-					<label>
-						Port:<br/>
-						<input type="number" name="port" value=${this.state.port}/>
-					</label>
-					<br/><br/>
-
-					<label>
-						Network name:<br/>
-						<input type="text" name="name" value=${this.state.name}/>
-					</label>
-					<br/><br/>
-
-					<label>
-						Nickname:<br/>
-						<input type="username" name="nickname" value=${this.state.nickname}/>
-					</label>
-					<br/><br/>
-
-					<label>
-						Username:<br/>
-						<input type="username" name="username" value=${this.state.username}/>
-					</label>
-					<br/><br/>
-
-					<label>
-						Real name:<br/>
-						<input type="text" name="realname" value=${this.state.realname}/>
-					</label>
-					<br/><br/>
-
-					<label>
-						Server password:<br/>
-						<input type="password" name="pass" value=${this.state.pass} placeholder="None"/>
-					</label>
-					<br/>
+					<${FormField}
+						label="Port"
+						type="number"
+						name="port"
+						value=${this.state.port}
+					/>
+					<${FormField}
+						label="Network name"
+						type="text"
+						name="name"
+						value=${this.state.name}
+					/>
+					<${FormField}
+						label="Nickname"
+						type="username"
+						name="nickname"
+						value=${this.state.nickname}
+					/>
+					<${FormField}
+						label="Username"
+						type="username"
+						name="username"
+						value=${this.state.username}
+					/>
+					<${FormField}
+						label="Real name"
+						type="text"
+						name="realname"
+						value=${this.state.realname}
+					/>
+					<${FormField}
+						label="Server password"
+						type="password"
+						name="pass"
+						value=${this.state.pass}
+						placeholder="None"
+					/>
 				</details>
 
-				<br/>
-				${removeNetwork}
-				${" "}
-				<button>
-					${this.props.isNew ? "Add network" : "Save network"}
-				</button>
+				<${FormActions}>
+					${removeNetwork}
+					<button>
+						${this.props.isNew ? "Add network" : "Save network"}
+					</button>
+				</>
 			</form>
 		`;
 	}

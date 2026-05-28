@@ -1,4 +1,5 @@
 import { html, Component } from "../lib/index.js";
+import { FormField, FormActions } from "./form-field.js";
 
 export default class RegisterForm extends Component {
 	state = {
@@ -28,26 +29,25 @@ export default class RegisterForm extends Component {
 	render() {
 		return html`
 			<form onInput=${this.handleInput} onSubmit=${this.handleSubmit}>
-				<label>
-					E-mail:<br/>
-					<input
-						type="email"
-						name="email"
-						value=${this.state.email}
-						required=${this.props.emailRequired}
-						placeholder=${this.props.emailRequired ? null : "(optional)"}
-						autofocus
-					/>
-				</label>
-				<br/><br/>
-
-				<label>
-					Password:<br/>
-					<input type="password" name="password" value=${this.state.password} required/>
-				</label>
-				<br/><br/>
-
-				<button>Register</button>
+				<${FormField}
+					label="E-mail"
+					type="email"
+					name="email"
+					value=${this.state.email}
+					required=${this.props.emailRequired}
+					placeholder=${this.props.emailRequired ? null : "(optional)"}
+					autofocus
+				/>
+				<${FormField}
+					label="Password"
+					type="password"
+					name="password"
+					value=${this.state.password}
+					required
+				/>
+				<${FormActions}>
+					<button>Register</button>
+				</>
 			</form>
 		`;
 	}
