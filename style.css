@@ -1,49 +1,59 @@
 :root {
-	--main-background: white;
-	--main-color: black;
-	--sidebar-background: #e3e3e3;
-	--expander-background: #b5b5b5;
-	--expander-background-hover: #a6a6a6;
-	--expander-border: #6c6c6c;
+	--main-background: #fcfcfd;
+	--main-color: #111827;
+	--sidebar-background: #f3f4f6;
+	--surface-background: #ffffff;
+	--border-color: #d7dce2;
+	--expander-background: #d1d5db;
+	--expander-background-hover: #b9c0ca;
+	--expander-border: #6b7280;
 
-	--button-color: #eff7ef;
-	--button-background: #545499;
-	--button-background-hover: #00007C;
-	--button-border: #e3e3e3;
+	--button-color: #ffffff;
+	--button-background: #2563eb;
+	--button-background-hover: #1d4ed8;
+	--button-border: #2563eb;
 
-	--danger-button-color: #eff7ef;
-	--danger-button-background: #db2626;
-	--danger-button-background-hover: #B20000;
-	--danger-button-border: #e3e3e3;
+	--danger-button-color: #ffffff;
+	--danger-button-background: #dc2626;
+	--danger-button-background-hover: #b91c1c;
+	--danger-button-border: #dc2626;
 
-	--buffer-button-background-hover: #e3e3e3;
+	--buffer-button-background-hover: #e5e7eb;
+	--focus-ring: #3b82f6;
 
-	--green: green;
-	--gray: #4a4a4a;
-	--red: #db2626;
+	--green: #047857;
+	--gray: #6b7280;
+	--red: #dc2626;
+	--orange: #b45309;
+	--purple: #7c3aed;
 }
 
 @media (prefers-color-scheme: dark) {
 	:root {
-		--main-background: #212529;
-		--main-color: #f8f9fa;
-		--sidebar-background: #131618;
-		--expander-background: #424446;
-		--expander-background-hover: #2a2d2f;
+		--main-background: #111315;
+		--main-color: #f4f7fb;
+		--sidebar-background: #181b20;
+		--surface-background: #15181d;
+		--border-color: #2b3038;
+		--expander-background: #2f3540;
+		--expander-background-hover: #3a424f;
 
-		--button-background: #282879;
-		--button-background-hover: #00007C;
-		--button-border: #131618;
+		--button-background: #5b8def;
+		--button-background-hover: #78a4ff;
+		--button-border: #5b8def;
 
-		--danger-button-background: #B20000;
-		--danger-button-background-hover: red;
-		--danger-button-border: #131618;
+		--danger-button-background: #df4d4d;
+		--danger-button-background-hover: #f87171;
+		--danger-button-border: #df4d4d;
 
-		--buffer-button-background-hover: #131618;
+		--buffer-button-background-hover: #252a31;
+		--focus-ring: #8ab4ff;
 
-		--green: #53b266;
-		--gray: #979797;
-		--red: #fb615b;
+		--green: #55c985;
+		--gray: #a8b0bd;
+		--red: #ff7373;
+		--orange: #f0a044;
+		--purple: #c084fc;
 	}
 }
 
@@ -60,9 +70,13 @@ html, body {
 
 body {
 	display: grid;
-	grid-template-rows: auto 1fr max-content;
+	grid-template-rows: auto minmax(0, 1fr) auto;
 	grid-template-columns: max-content 1fr max-content;
-	font-family: monospace;
+	font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	font-size: 14px;
+	line-height: 1.45;
+	color: var(--main-color);
+	background: var(--main-background);
 }
 
 noscript {
@@ -74,18 +88,28 @@ noscript {
 
 button {
 	background: var(--button-background);
-	transition: background 0.25s linear;
+	transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 	color: var(--button-color);
-	padding: 0.25rem 0.5rem;
+	padding: 0.45rem 0.75rem;
 	border-style: solid;
 	border-color: var(--button-border);
 	border-width: 1px;
-	font-size: 0.8rem;
+	border-radius: 6px;
+	font: inherit;
 	cursor: pointer;
 }
 
 button:hover {
 	background: var(--button-background-hover);
+	border-color: var(--button-background-hover);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+summary:focus-visible {
+	outline: 2px solid var(--focus-ring);
+	outline-offset: 2px;
 }
 
 button.danger {
@@ -129,7 +153,7 @@ button.danger:hover {
 	background: var(--expander-background);
 	transition: background 0.2s linear;
 	border: none;
-	width: 10px;
+	width: 12px;
 }
 
 .expander:hover {
@@ -150,7 +174,8 @@ button.danger:hover {
 	list-style-type: none;
 	margin: 0;
 	padding: 0;
-	flex: 1 0 auto;
+	width: clamp(12rem, 17vw, 17rem);
+	flex: 0 0 auto;
 	overflow-x: hidden;
 	overflow-y: auto;
 	scrollbar-width: thin;
@@ -158,21 +183,24 @@ button.danger:hover {
 #buffer-list li a {
 	display: inline-block;
 	width: 100%;
-	padding: 2px 10px;
+	padding: 4px 12px;
 	box-sizing: border-box;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 #buffer-list li.error a {
-	color: red;
+	color: var(--red);
 }
 #buffer-list li.unread-message a {
-	color: #b37400;
+	color: var(--orange);
 }
 #buffer-list li.unread-highlight a {
-	color: #22009b;
+	color: var(--purple);
 }
 #buffer-list li.active a {
-	color: white;
-	background-color: var(--gray);
+	color: var(--button-color);
+	background-color: var(--button-background);
 }
 #buffer-list li:not(.type-server) a {
 	padding-left: 20px;
@@ -180,17 +208,18 @@ button.danger:hover {
 
 #member-list-header {
 	color: var(--main-color);
-	background-color: var(--main-background);
+	background-color: var(--surface-background);
 	box-sizing: border-box;
-	padding: 5px 10px;
-	border-bottom: 1px solid var(--sidebar-background);
+	padding: 6px 12px;
+	border-bottom: 1px solid var(--border-color);
+	font-weight: 600;
 }
 
 #buffer-header {
 	color: var(--main-color);
-	background-color: var(--main-background);
+	background-color: var(--surface-background);
 	box-sizing: border-box;
-	border-bottom: 1px solid var(--sidebar-background);
+	border-bottom: 1px solid var(--border-color);
 
 	grid-row: 1;
 	grid-column: 2;
@@ -202,14 +231,14 @@ button.danger:hover {
 
 #buffer-header .title {
 	display: none;
-	padding: 5px 10px;
+	padding: 6px 12px;
 	font-weight: bold;
 	grid-row: 1;
 	grid-column: 1;
 }
 
 #buffer-header .description {
-	padding: 5px 10px;
+	padding: 6px 12px;
 	grid-row: 2;
 	grid-column: 1;
 	max-height: 20vh;
@@ -226,10 +255,10 @@ button.danger:hover {
 	color: var(--green);
 }
 #buffer-header .status-gone {
-	color: orange;
+	color: var(--orange);
 }
 #buffer-header .status-offline {
-	color: red;
+	color: var(--red);
 }
 
 .actions {
@@ -239,7 +268,9 @@ button.danger:hover {
 }
 
 .actions button {
-	border-width: 0 0 0px 1px;
+	border-width: 0 0 0 1px;
+	border-radius: 0;
+	min-height: 100%;
 }
 
 #buffer {
@@ -263,25 +294,11 @@ button.danger:hover {
 #member-list > section {
 	display: flex;
 	flex-direction: column;
+	width: clamp(10rem, 15vw, 14rem);
 }
 
 #member-list-header {
-	border-left: 1px solid var(--sidebar-background);
-}
-
-@media (max-width: 640px) {
-	#buffer-list ul {
-		width: 0px;
-	}
-
-	#buffer-list.expand {
-		z-index: 999;
-		grid-column: 1 / 4;
-	}
-
-	#buffer-list.expand ul {
-		width: auto;
-	}
+	border-left: 1px solid var(--border-color);
 }
 
 #member-list ul {
@@ -296,38 +313,41 @@ button.danger:hover {
 #member-list li a {
 	display: inline-block;
 	width: 100%;
-	padding: 2px 10px;
+	padding: 4px 12px;
 	box-sizing: border-box;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 #member-list li a.away {
 	color: var(--gray);
 }
 
-.membership { /* fallback */
-	color: purple;
+.membership {
+	color: var(--purple);
 }
 .membership.owner {
-	color: red;
+	color: var(--red);
 }
 .membership.admin {
-	color: blue;
+	color: var(--button-background);
 }
 .membership.operator {
 	color: var(--green);
 }
 .membership.halfop {
-	color: orange;
+	color: var(--orange);
 }
 .membership.voice {
-	color: yellow;
+	color: #ca8a04;
 }
 
 #composer {
 	color: var(--main-color);
-	background: var(--main-background);
+	background: var(--surface-background);
 	grid-row: 3;
 	grid-column: 2 / 3;
-	border-top: 1px solid var(--sidebar-background);
+	border-top: 1px solid var(--border-color);
 	display: flex;
 	position: relative;
 }
@@ -337,9 +357,10 @@ button.danger:hover {
 }
 #composer input[type="text"] {
 	flex: 1;
-	height: 35px;
+	min-height: 42px;
 	box-sizing: border-box;
-	padding: 10px;
+	padding: 10px 12px;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
 #composer input[type="text"], #composer input[type="text"]:focus {
 	border: none;
@@ -394,12 +415,22 @@ button.danger:hover {
 	top: 0;
 	left: 0;
 	height: 100%;
+	display: grid;
+	place-items: center;
+	padding: 1rem;
+	box-sizing: border-box;
 }
 #connect form {
 	margin: 0 auto;
-	max-width: 350px;
-	padding: 10px;
+	width: min(100%, 360px);
+	max-height: 100%;
+	overflow: auto;
+	padding: 18px;
 	box-sizing: border-box;
+	background: var(--surface-background);
+	border: 1px solid var(--border-color);
+	border-radius: 8px;
+	box-shadow: 0 12px 35px rgba(17, 24, 39, 0.12);
 }
 
 form input[type="text"],
@@ -412,9 +443,17 @@ form input[type="search"] {
 	width: 100%;
 	font-family: inherit;
 	font-size: inherit;
+	min-height: 36px;
+	color: var(--main-color);
+	background: var(--surface-background);
+	border: 1px solid var(--border-color);
+	border-radius: 6px;
+	padding: 0.45rem 0.55rem;
 }
 form label input[type="checkbox"], form label input[type="radio"] {
 	margin-right: 0.5em;
+	width: auto;
+	min-height: auto;
 }
 
 a {
@@ -445,26 +484,29 @@ details summary[role="button"] {
 	box-sizing: border-box;
 	color: var(--gray);
 	word-wrap: break-word;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+	font-size: 13px;
+	line-height: 1.45;
 }
 #buffer .logline-list {
-	padding: 10px;
+	padding: 10px 12px;
 }
 #buffer .logline {
 	white-space: pre-wrap;
-	overflow: auto;
+	overflow-wrap: anywhere;
 }
 #buffer .talk, #buffer .motd, #buffer .nag {
 	color: var(--main-color);
 }
 #buffer .error {
-	color: red;
+	color: var(--red);
 }
 #buffer .me-tell {
-	color: #b37400;
+	color: var(--orange);
 }
 #buffer .highlight .nick {
-	color: yellow;
-	background-color: #c700ff;
+	color: var(--main-background);
+	background-color: var(--purple);
 }
 #buffer .nick-1 {
 	color: #f25e0d;
@@ -529,10 +571,10 @@ details summary[role="button"] {
 	border-bottom: 1px solid transparent;
 }
 #buffer .date-separator {
-	color: #757575;
+	color: var(--gray);
 }
 #buffer .date-separator::before, #buffer .date-separator::after {
-	border-color: #ddd;
+	border-color: var(--border-color);
 }
 #buffer .unread-separator {
 	color: #ff3535;
@@ -543,12 +585,14 @@ details summary[role="button"] {
 
 #error-msg {
 	color: white;
-	background-color: red;
+	background-color: var(--red);
 	position: fixed;
 	bottom: 2rem;
 	right: 0;
 	padding: 0.5rem;
 	margin: 0.5rem;
+	border-radius: 6px;
+	box-shadow: 0 12px 35px rgba(0, 0, 0, 0.22);
 }
 
 #error-msg button, .dialog button.dialog-close {
@@ -560,7 +604,7 @@ details summary[role="button"] {
 }
 
 .error-text {
-	color: red;
+	color: var(--red);
 }
 
 .dialog {
@@ -578,7 +622,8 @@ details summary[role="button"] {
 	margin: 20px auto;
 	max-width: 500px;
 	padding: 15px;
-	border: 1px solid rgba(0, 0, 0, 0.6);
+	border: 1px solid var(--border-color);
+	border-radius: 8px;
 }
 .dialog .dialog-header {
 	display: flex;
@@ -659,11 +704,11 @@ ul.switcher-list .server {
 		color: var(--green);
 	}
 	#buffer-list li.unread-highlight a {
-		color: #0062cc;
+		color: #8ab4ff;
 	}
 	#buffer-list li.active a {
-		color: var(--sidebar-background);
-		background-color: white;
+		color: #071019;
+		background-color: #8ab4ff;
 	}
 
 	#buffer-header .status-gone {
@@ -671,27 +716,6 @@ ul.switcher-list .server {
 	}
 	#buffer-header .status-offline {
 		color: var(--red);
-	}
-
-	form input[type="text"],
-	form input[type="username"],
-	form input[type="password"],
-	form input[type="url"],
-	form input[type="email"],
-	form input[type="search"] {
-		color: #ffffff;
-		background: var(--sidebar-background);
-		border: 1px solid #495057;
-		padding: 0.25rem 0.375rem;
-	}
-	form input[type="text"]:focus,
-	form input[type="username"]:focus,
-	form input[type="password"]:focus,
-	form input[type="url"]:focus,
-	form input[type="email"]:focus,
-	form input[type="search"]:focus {
-		outline: 0;
-		border-color: #3897ff;
 	}
 
 	#buffer {
@@ -704,12 +728,8 @@ ul.switcher-list .server {
 		color: #e16b97;
 	}
 	#buffer .highlight .nick {
-		color: #1e0010;
-		background-color: #0062cc;
-	}
-
-	#buffer .date-separator {
-		color: #757575;
+		color: #071019;
+		background-color: #8ab4ff;
 	}
 
 	#buffer .date-separator::before,
@@ -725,8 +745,8 @@ ul.switcher-list .server {
 	}
 
 	#error-msg {
-		color: black;
-		background-color: #efa3aa;
+		color: #1a0707;
+		background-color: #fca5a5;
 	}
 
 	#error-msg a {
@@ -734,7 +754,7 @@ ul.switcher-list .server {
 	}
 
 	.error-text {
-		color: #efa3aa;
+		color: #fca5a5;
 	}
 
 	#buffer .nick-8 {
@@ -770,26 +790,32 @@ ul.switcher-list .server {
 }
 
 @media (max-width: 640px) {
+	body {
+		grid-template-columns: max-content minmax(0, 1fr) max-content;
+		font-size: 15px;
+	}
+
 	.expander {
 		display: block;
 	}
 
 	#buffer-list ul, #member-list > section {
-		width: 0px;
+		width: 0;
 	}
 
 	#buffer-list.expand, #member-list.expand {
 		z-index: 999;
 		grid-column-start: 1;
 		grid-column-end: 4;
+		box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.28);
 	}
 
 	#buffer-list.expand ul {
-		width: auto;
+		width: min(82vw, 22rem);
 	}
 
 	#member-list.expand > section {
-		width: 100%;
+		width: min(82vw, 22rem);
 	}
 
 	#member-list-header {
@@ -803,10 +829,29 @@ ul.switcher-list .server {
 	#buffer-header .title {
 		display: block;
 	}
+
+	#buffer-header .actions button,
+	#composer-buttons button {
+		min-width: 42px;
+		min-height: 42px;
+	}
+
+	#buffer .logline-list {
+		padding: 8px 10px;
+	}
+
+	#connect {
+		padding: 0.75rem;
+		place-items: stretch;
+	}
+
+	#connect form {
+		align-self: center;
+	}
 }
 
 @media (pointer: none), (pointer: coarse) {
 	#buffer-list li a, #member-list li a {
-		padding: 7px 10px;
+		padding: 10px 12px;
 	}
 }

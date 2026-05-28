@@ -29,12 +29,13 @@ export const autoconnect = new Item("autoconnect");
 export const naggedProtocolHandler = new Item("naggedProtocolHandler");
 export const settings = new Item("settings");
 
-export class Buffer {
-	raw = new Item("buffers");
+class BufferBackedStore {
 	m = null;
 
-	constructor() {
-		let obj = this.raw.load();
+	constructor(raw) {
+		this.raw = raw;
+
+		let obj = raw.load();
 		this.m = new Map(Object.entries(obj || {}));
 
 		let saveImmediately = this.save.bind(this);
@@ -64,16 +65,79 @@ export class Buffer {
 			this.raw.put(null);
 		}
 	}
+}
+
+export class Draft {
+	constructor() {
+		this.store = new BufferBackedStore(new Item("drafts"));
+	}
 
 	get(buf) {
-		return this.m.get(this.key(buf));
+		return this.store.m.get(this.store.key(buf));
+	}
+
+	put(buf) {
+		let key = this.store.key(buf);
+		let text = buf.text || "";
+
+		if (text) {
+			this.store.m.set(key, {
+				name: buf.name,
+				text,
+				server: {
+					bouncerNetwork: buf.server.bouncerNetwork,
+				},
+			});
+		} else {
+			this.store.m.delete(key);
+		}
+
+		this.store.save();
+	}
+
+	delete(buf) {
+		this.store.m.delete(this.store.key(buf));
+		this.store.save();
+	}
+
+	clear(server) {
+		if (server) {
+			for (const draft of this.store.m.values()) {
+				if (draft.server.bouncerNetwork === server.bouncerNetwork) {
+					this.store.m.delete(this.store.key(draft));
+				}
+			}
+		} else {
+			this.store.m = new Map();
+		}
+		this.store.save();
+	}
+}
+
+export class Buffer {
+	store = null;
+
+	constructor() {
+		this.store = new BufferBackedStore(new Item("buffers"));
+	}
+
+	key(buf) {
+		return this.store.key(buf);
+	}
+
+	save() {
+		this.store.save();
+	}
+
+	get(buf) {
+		return this.store.m.get(this.key(buf));
 	}
 
 	put(buf) {
 		let key = this.key(buf);
 
-		let updated = !this.m.has(key);
-		let prev = this.m.get(key) || {};
+		let updated = !this.store.m.has(key);
+		let prev = this.store.m.get(key) || {};
 
 		let unread = prev.unread || Unread.NONE;
 		if (buf.unread !== undefined && buf.unread !== prev.unread) {
@@ -107,7 +171,7 @@ export class Buffer {
 			return false;
 		}
 
-		this.m.set(this.key(buf), {
+		this.store.m.set(this.key(buf), {
 			name: buf.name,
 			unread,
 			receipts,
@@ -122,7 +186,7 @@ export class Buffer {
 	}
 
 	delete(buf) {
-		this.m.delete(this.key(buf));
+		this.store.m.delete(this.key(buf));
 		this.save();
 	}
 
@@ -130,7 +194,7 @@ export class Buffer {
 		// Some gamja versions would store the same buffer multiple times
 		let names = new Set();
 		let buffers = [];
-		for (const buf of this.m.values()) {
+		for (const buf of this.store.m.values()) {
 			if (buf.server.bouncerNetwork !== server.bouncerNetwork) {
 				continue;
 			}
@@ -146,10 +210,10 @@ export class Buffer {
 	clear(server) {
 		if (server) {
 			for (const buf of this.list(server)) {
-				this.m.delete(this.key(buf));
+				this.store.m.delete(this.key(buf));
 			}
 		} else {
-			this.m = new Map();
+			this.store.m = new Map();
 		}
 		this.save();
 	}

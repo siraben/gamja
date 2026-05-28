@@ -352,6 +352,7 @@ export default class App extends Component {
 		};
 
 		this.bufferStore = new store.Buffer();
+		this.draftStore = new store.Draft();
 
 		configPromise.then((config) => {
 			this.handleConfig(config);
@@ -1723,8 +1724,10 @@ export default class App extends Component {
 					this.close({ server: serverID, name: SERVER_BUFFER });
 				}
 				this.bufferStore.clear();
+				this.draftStore.clear();
 			} else {
 				this.bufferStore.clear(client.params);
+				this.draftStore.clear(client.params);
 			}
 
 			// TODO: only clear autoconnect if this server is stored there
@@ -1750,6 +1753,10 @@ export default class App extends Component {
 			});
 
 			client.unmonitor(buf.name);
+			this.draftStore.delete({
+				name: buf.name,
+				server: client.params,
+			});
 
 			this.bufferStore.put({
 				name: buf.name,
@@ -1760,26 +1767,55 @@ export default class App extends Component {
 		}
 	}
 
+	getStoredComposerDraft(buf) {
+		let client = this.clients.get(buf.server);
+		if (!client) {
+			return "";
+		}
+		let draft = this.draftStore.get({
+			name: buf.name,
+			server: client.params,
+		});
+		return draft ? draft.text : "";
+	}
+
+	putStoredComposerDraft(buf, text) {
+		let client = this.clients.get(buf.server);
+		if (!client) {
+			return;
+		}
+		this.draftStore.put({
+			name: buf.name,
+			server: client.params,
+			text,
+		});
+	}
+
 	setComposerDraft(bufferID, textOrUpdater) {
 		if (!bufferID) {
 			return;
 		}
 
 		this.setState((state) => {
-			if (!state.buffers.has(bufferID)) {
+			let buf = state.buffers.get(bufferID);
+			if (!buf) {
 				return;
 			}
 
 			let composerDrafts = new Map(state.composerDrafts);
 			let text = textOrUpdater;
 			if (typeof textOrUpdater === "function") {
-				text = textOrUpdater(composerDrafts.get(bufferID) || "");
+				let prev = composerDrafts.has(bufferID) ?
+					composerDrafts.get(bufferID) :
+					this.getStoredComposerDraft(buf);
+				text = textOrUpdater(prev || "");
 			}
 			if (text) {
 				composerDrafts.set(bufferID, text);
 			} else {
 				composerDrafts.delete(bufferID);
 			}
+			this.putStoredComposerDraft(buf, text);
 			return { composerDrafts };
 		});
 	}
@@ -2506,7 +2542,11 @@ export default class App extends Component {
 			privmsgMaxLen = irc.getMaxPrivmsgLen(client.isupport, client.nick, activeBuffer.name);
 		}
 		if (activeBuffer) {
-			composerText = this.state.composerDrafts.get(activeBuffer.id) || "";
+			if (this.state.composerDrafts.has(activeBuffer.id)) {
+				composerText = this.state.composerDrafts.get(activeBuffer.id);
+			} else {
+				composerText = this.getStoredComposerDraft(activeBuffer);
+			}
 		}
 
 		let app = html`
