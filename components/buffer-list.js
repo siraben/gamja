@@ -163,7 +163,7 @@ export default function BufferList(props) {
 	});
 
 	return html`
-		<ul role="tablist" aria-label="Buffer list">
+		<ul id="buffer-list-nav" role="tablist" aria-label="Buffer list">
 			${items}
 		</ul>
 	`;

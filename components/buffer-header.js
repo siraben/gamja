@@ -17,7 +17,7 @@ function NickStatus(props) {
 		[UserStatus.OFFLINE]: "User is offline",
 	};
 	let text = textMap[props.status];
-	return html`<span class="status status-${props.status}" title=${text}>●</span>`;
+	return html`<span class="status status-${props.status}" role="img" aria-label=${text} title=${text}>●</span>`;
 }
 
 export default function BufferHeader(props) {

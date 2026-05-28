@@ -455,7 +455,7 @@ export default class Composer extends Component {
 					type="file"
 					ref=${this.fileInput}
 					multiple
-					style="display: none"
+					class="visually-hidden"
 					onChange=${this.handleFileInputChange}
 				/>
 			`;

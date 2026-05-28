@@ -291,7 +291,7 @@ export default class App extends Component {
 		composerDrafts: new Map(),
 		openPanels: {
 			bufferList: false,
-			memberList: !window.matchMedia("(max-width: 640px)").matches,
+			memberList: false,
 		},
 	};
 	debug = !isProduction();
@@ -2407,12 +2407,21 @@ export default class App extends Component {
 		setupKeybindings(this);
 		window.addEventListener("focus", this.handleWindowFocus);
 		window.addEventListener("hashchange", this.handleWindowHashChange);
+
+		this.narrowViewport = window.matchMedia("(max-width: 640px)");
+		this.handleViewportChange = () => {
+			this.setState({ openPanels: { bufferList: false, memberList: false } });
+		};
+		this.narrowViewport.addEventListener("change", this.handleViewportChange);
 	}
 
 	componentWillUnmount() {
 		document.title = this.baseTitle;
 		window.removeEventListener("focus", this.handleWindowFocus);
 		window.removeEventListener("hashchange", this.handleWindowHashChange);
+		if (this.narrowViewport) {
+			this.narrowViewport.removeEventListener("change", this.handleViewportChange);
+		}
 	}
 
 	render() {
@@ -2493,12 +2502,15 @@ export default class App extends Component {
 				>
 					<button
 						class="expander"
+						aria-label=${this.state.openPanels.memberList ? "Hide members list" : "Show members list"}
+						aria-expanded=${this.state.openPanels.memberList}
+						aria-controls="member-list-panel"
 						onClick=${this.toggleMemberList}
 					>
 						<span></span>
 						<span></span>
 					</button>
-					<section>
+					<section id="member-list-panel">
 						<section id="member-list-header">
 							${activeBuffer.members.size} users
 						</section>
@@ -2663,6 +2675,9 @@ export default class App extends Component {
 				/>
 				<button
 					class="expander"
+					aria-label=${this.state.openPanels.bufferList ? "Hide buffer list" : "Show buffer list"}
+					aria-expanded=${this.state.openPanels.bufferList}
+					aria-controls="buffer-list-nav"
 					onClick=${this.toggleBufferList}
 				>
 					<span></span>
