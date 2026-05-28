@@ -1431,6 +1431,22 @@ ul.switcher-list .server {
 	#buffer-header .description {
 		max-height: 4.8rem;
 	}
+
+	/* At narrow desktop widths the chat must stay primary. Collapse the
+	   member list behind its expander handle; user can reveal it on demand. */
+	#member-list .expander {
+		display: block;
+	}
+
+	#member-list > section {
+		width: 0;
+		border-left: none;
+	}
+
+	#member-list.expand > section {
+		width: clamp(11rem, 18vw, 15rem);
+		border-left: 1px solid var(--border);
+	}
 }
 
 @media (max-width: 640px) {
