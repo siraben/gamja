@@ -616,6 +616,14 @@ button.danger:hover {
 	font-weight: 400;
 }
 
+/* Same-nick hover highlight: applied via a delegated listener in app.js
+   to every [data-nick] element matching the hovered nick. */
+.nick-peer {
+	background: var(--accent-soft);
+	box-shadow: 0 0 0 2px var(--accent-soft);
+	border-radius: 2px;
+}
+
 /* nick palette — preserved hue identity, adjusted saturation/lightness for legibility */
 #buffer .nick { font-weight: 500; }
 #buffer .nick-1  { color: #d35400; }

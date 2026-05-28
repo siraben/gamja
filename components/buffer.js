@@ -32,6 +32,7 @@ function Nick(props) {
 			href=${irc.formatURL({ entity: props.nick })}
 			title=${title}
 			class="nick nick-${colorIndex}"
+			data-nick=${props.nick}
 			onClick=${handleClick}
 		>${props.nick}</a>
 	`;

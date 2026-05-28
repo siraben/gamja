@@ -2434,6 +2434,41 @@ export default class App extends Component {
 			this.setState({ openPanels: { bufferList: false, memberList: false } });
 		};
 		this.narrowViewport.addEventListener("change", this.handleViewportChange);
+
+		this.hoveredNick = null;
+		this.handleNickHover = (event) => {
+			let el = event.target.closest("[data-nick]");
+			if (event.type === "mouseover") {
+				let nick = el && el.getAttribute("data-nick");
+				if (nick === this.hoveredNick) {
+					return;
+				}
+				this.clearNickPeers();
+				if (nick) {
+					this.hoveredNick = nick;
+					let escaped = (window.CSS && CSS.escape) ? CSS.escape(nick) : nick;
+					let peers = document.querySelectorAll(`[data-nick="${escaped}"]`);
+					peers.forEach((p) => p.classList.add("nick-peer"));
+				}
+			} else if (event.type === "mouseout" && el) {
+				let related = event.relatedTarget;
+				if (related && related.closest && related.closest(`[data-nick="${
+					(window.CSS && CSS.escape) ? CSS.escape(el.getAttribute("data-nick")) : el.getAttribute("data-nick")
+				}"]`)) {
+					return;
+				}
+				this.clearNickPeers();
+			}
+		};
+		this.clearNickPeers = () => {
+			if (!this.hoveredNick) {
+				return;
+			}
+			document.querySelectorAll(".nick-peer").forEach((p) => p.classList.remove("nick-peer"));
+			this.hoveredNick = null;
+		};
+		document.body.addEventListener("mouseover", this.handleNickHover);
+		document.body.addEventListener("mouseout", this.handleNickHover);
 	}
 
 	componentWillUnmount() {
@@ -2443,6 +2478,8 @@ export default class App extends Component {
 		if (this.narrowViewport) {
 			this.narrowViewport.removeEventListener("change", this.handleViewportChange);
 		}
+		document.body.removeEventListener("mouseover", this.handleNickHover);
+		document.body.removeEventListener("mouseout", this.handleNickHover);
 	}
 
 	render() {

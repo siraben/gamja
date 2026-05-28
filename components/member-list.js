@@ -56,6 +56,7 @@ class MemberItem extends Component {
 					href=${irc.formatURL({ entity: this.props.nick, enttype: "user" })}
 					class=${classes.join(" ")}
 					title=${title}
+					data-nick=${this.props.nick}
 					onClick=${this.handleClick}
 				>
 					<${Membership} value=${this.props.membership}/>
