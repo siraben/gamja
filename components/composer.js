@@ -1,4 +1,30 @@
 import { html, Component, createRef } from "../lib/index.js";
+import commands from "../commands.js";
+
+const SLASH_SUGGESTION_LIMIT = 8;
+
+function computeSlashSuggestions(text) {
+	if (!text || text[0] !== "/") {
+		return null;
+	}
+	if (text.indexOf(" ") !== -1) {
+		return null;
+	}
+	let prefix = text.slice(1).toLowerCase();
+	let matches = [];
+	for (let cmd of commands.values()) {
+		if (cmd.name.startsWith(prefix)) {
+			matches.push(cmd);
+			if (matches.length >= SLASH_SUGGESTION_LIMIT) {
+				break;
+			}
+		}
+	}
+	if (matches.length === 0) {
+		return null;
+	}
+	return matches;
+}
 
 const uploadIcon = html`
 	<svg width="1em" height="1em" viewBox="0 0 24 24"
@@ -37,6 +63,7 @@ export default class Composer extends Component {
 	state = {
 		uploading: false,
 		dragging: false,
+		slashIndex: 0,
 	};
 	textInput = createRef();
 	fileInput = createRef();
@@ -65,12 +92,30 @@ export default class Composer extends Component {
 	handleInput(event) {
 		if (event.target.name === "text") {
 			this.props.onTextChange(event.target.value, this.props.bufferID);
+			this.setState({ slashIndex: 0 });
 		} else if (event.target.name) {
 			this.setState({ [event.target.name]: event.target.value });
 		}
 
 		if (this.props.readOnly && event.target.name === "text" && !event.target.value) {
 			event.target.blur();
+		}
+	}
+
+	acceptSlashSuggestion(cmd) {
+		let text = "/" + cmd.name + " ";
+		this.props.onTextChange(text, this.props.bufferID);
+		this.setState({ slashIndex: 0 });
+		let input = this.textInput.current;
+		if (input) {
+			input.focus();
+			requestAnimationFrame(() => {
+				if (this.textInput.current) {
+					let pos = this.textInput.current.value.length;
+					this.textInput.current.selectionStart = pos;
+					this.textInput.current.selectionEnd = pos;
+				}
+			});
 		}
 	}
 
@@ -81,6 +126,28 @@ export default class Composer extends Component {
 
 	handleInputKeyDown(event) {
 		let input = event.target;
+
+		let slashSuggestions = computeSlashSuggestions(this.props.text);
+		if (slashSuggestions) {
+			let idx = this.state.slashIndex;
+			if (event.key === "ArrowDown") {
+				event.preventDefault();
+				this.setState({ slashIndex: (idx + 1) % slashSuggestions.length });
+				return;
+			}
+			if (event.key === "ArrowUp") {
+				event.preventDefault();
+				this.setState({
+					slashIndex: (idx - 1 + slashSuggestions.length) % slashSuggestions.length,
+				});
+				return;
+			}
+			if (event.key === "Enter" || event.key === "Tab") {
+				event.preventDefault();
+				this.acceptSlashSuggestion(slashSuggestions[idx] || slashSuggestions[0]);
+				return;
+			}
+		}
 
 		if (!this.props.autocomplete || event.key !== "Tab") {
 			return;
@@ -461,6 +528,41 @@ export default class Composer extends Component {
 			`;
 		}
 
+		let slashSuggestions = computeSlashSuggestions(this.props.text);
+		let slashIndex = this.state.slashIndex;
+		if (slashSuggestions && slashIndex >= slashSuggestions.length) {
+			slashIndex = 0;
+		}
+
+		let slashDropdown = null;
+		if (slashSuggestions) {
+			slashDropdown = html`
+				<div
+					id="composer-slash-suggestions"
+					role="listbox"
+					aria-label="Slash commands"
+				>
+					${slashSuggestions.map((cmd, i) => html`
+						<button
+							type="button"
+							role="option"
+							aria-selected=${i === slashIndex}
+							class=${i === slashIndex ? "active" : ""}
+							onMouseDown=${(event) => {
+								event.preventDefault();
+								this.acceptSlashSuggestion(cmd);
+							}}
+							onMouseEnter=${() => this.setState({ slashIndex: i })}
+						>
+							<span class="cmd-name">/${cmd.name}</span>
+							${cmd.usage ? html`<span class="cmd-usage">${cmd.usage}</span>` : null}
+							${cmd.description ? html`<span class="cmd-desc">${cmd.description}</span>` : null}
+						</button>
+					`)}
+				</div>
+			`;
+		}
+
 		return html`
 			<form
 				id="composer"
@@ -472,6 +574,7 @@ export default class Composer extends Component {
 				onDragOver=${this.handleDragOver}
 				onDrop=${this.handleDrop}
 			>
+				${slashDropdown}
 				<input
 					type="text"
 					name="text"
@@ -480,6 +583,9 @@ export default class Composer extends Component {
 					autocomplete="off"
 					placeholder=${placeholder}
 					enterkeyhint="send"
+					aria-autocomplete="list"
+					aria-controls="composer-slash-suggestions"
+					aria-expanded=${slashSuggestions ? "true" : "false"}
 					onKeyDown=${this.handleInputKeyDown}
 					onPaste=${this.handleInputPaste}
 					maxlength=${this.props.maxLen}
