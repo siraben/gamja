@@ -104,6 +104,21 @@ export const keybindings = [
 			app.openDialog("switch");
 		},
 	},
+	{
+		key: "f",
+		ctrlKey: true,
+		description: "Search messages in the active buffer",
+		execute: (app) => {
+			if (!app.state.activeBuffer) {
+				return;
+			}
+			let buf = app.state.buffers.get(app.state.activeBuffer);
+			if (!buf || !buf.messages || buf.messages.length === 0) {
+				return;
+			}
+			app.openDialog("search");
+		},
+	},
 ];
 
 export function setup(app) {

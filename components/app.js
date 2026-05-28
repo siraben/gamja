@@ -14,6 +14,7 @@ import RegisterForm from "./register-form.js";
 import VerifyForm from "./verify-form.js";
 import SettingsForm from "./settings-form.js";
 import SwitcherForm from "./switcher-form.js";
+import SearchForm from "./search-form.js";
 import Composer from "./composer.js";
 import ScrollManager from "./scroll-manager.js";
 import Dialog from "./dialog.js";
@@ -345,6 +346,7 @@ export default class App extends Component {
 		this.handleSettingsChange = this.handleSettingsChange.bind(this);
 		this.handleSettingsDisconnect = this.handleSettingsDisconnect.bind(this);
 		this.handleSwitchSubmit = this.handleSwitchSubmit.bind(this);
+		this.handleSearchSubmit = this.handleSearchSubmit.bind(this);
 		this.handleWindowFocus = this.handleWindowFocus.bind(this);
 		this.handleWindowHashChange = this.handleWindowHashChange.bind(this);
 
@@ -2341,6 +2343,25 @@ export default class App extends Component {
 		}
 	}
 
+	handleSearchSubmit(msg) {
+		this.dismissDialog();
+		if (!msg || !msg.key) {
+			return;
+		}
+		// Defer to next frame so the dialog teardown completes first.
+		requestAnimationFrame(() => {
+			let el = document.querySelector(
+				`.logline[data-key="${CSS.escape(String(msg.key))}"]`,
+			);
+			if (!el) {
+				return;
+			}
+			el.scrollIntoView({ block: "center", behavior: "smooth" });
+			el.classList.add("flash");
+			setTimeout(() => el.classList.remove("flash"), 1600);
+		});
+	}
+
 	handleWindowFocus() {
 		if (this.state.activeBuffer) {
 			// TODO: only do this if scrolled at the bottom
@@ -2620,6 +2641,15 @@ export default class App extends Component {
 						servers=${this.state.servers}
 						bouncerNetworks=${this.state.bouncerNetworks}
 						onSubmit=${this.handleSwitchSubmit}/>
+				</>
+			`;
+			break;
+		case "search":
+			dialog = html`
+				<${Dialog} title="Search messages" onDismiss=${this.dismissDialog}>
+					<${SearchForm}
+						buffer=${activeBuffer}
+						onSubmit=${this.handleSearchSubmit}/>
 				</>
 			`;
 			break;
