@@ -15,6 +15,80 @@ function djb2(s) {
 	return hash;
 }
 
+// RFC 1459 nick characters plus the special chars commonly used.
+const NICK_WORD_RE = /[A-Za-z0-9_\-[\]\\`^{}|]+/g;
+const MIN_MENTION_LEN = 2;
+
+function buildNickLookup(buf, server) {
+	// Lowercase nick → canonical nick. Skip very short nicks to avoid
+	// matching single letters in prose.
+	let lookup = new Map();
+	if (buf && buf.members) {
+		for (let nick of buf.members.keys()) {
+			if (nick.length >= MIN_MENTION_LEN) {
+				lookup.set(nick.toLowerCase(), nick);
+			}
+		}
+	}
+	// Also include the user's own nick so self-mentions render coloured.
+	if (server && server.nick && server.nick.length >= MIN_MENTION_LEN) {
+		lookup.set(server.nick.toLowerCase(), server.nick);
+	}
+	return lookup;
+}
+
+// Walk a plain text fragment, replacing standalone nick occurrences with
+// Nick components. Returns an array of strings and html nodes.
+function mentionify(text, nickLookup, createNick) {
+	if (!nickLookup || nickLookup.size === 0) {
+		return [text];
+	}
+	let parts = [];
+	let last = 0;
+	let match;
+	NICK_WORD_RE.lastIndex = 0;
+	while ((match = NICK_WORD_RE.exec(text)) !== null) {
+		let word = match[0];
+		let canonical = word.length >= MIN_MENTION_LEN
+			? nickLookup.get(word.toLowerCase())
+			: null;
+		if (!canonical) {
+			continue;
+		}
+		if (match.index > last) {
+			parts.push(text.slice(last, match.index));
+		}
+		parts.push(createNick(canonical, { mention: true, displayed: word }));
+		last = NICK_WORD_RE.lastIndex;
+	}
+	if (last < text.length) {
+		parts.push(text.slice(last));
+	}
+	if (parts.length === 0) {
+		return [text];
+	}
+	return parts;
+}
+
+// Run linkify first, then mentionify on remaining plain-text pieces.
+function linkifyAndMention(text, nickLookup, createNick, onChannelClick) {
+	let pieces = linkify(text, onChannelClick);
+	if (!nickLookup || nickLookup.size === 0) {
+		return pieces;
+	}
+	let out = [];
+	for (let p of pieces) {
+		if (typeof p === "string" && p) {
+			for (let m of mentionify(p, nickLookup, createNick)) {
+				out.push(m);
+			}
+		} else {
+			out.push(p);
+		}
+	}
+	return out;
+}
+
 function Nick(props) {
 	function handleClick(event) {
 		event.preventDefault();
@@ -27,14 +101,19 @@ function Nick(props) {
 	}
 
 	let colorIndex = djb2(props.nick) % 16 + 1;
+	let className = "nick nick-" + colorIndex;
+	if (props.extraClass) {
+		className += " " + props.extraClass;
+	}
+	let label = props.displayed || props.nick;
 	return html`
 		<a
 			href=${irc.formatURL({ entity: props.nick })}
 			title=${title}
-			class="nick nick-${colorIndex}"
+			class=${className}
 			data-nick=${props.nick}
 			onClick=${handleClick}
-		>${props.nick}</a>
+		>${label}</a>
 	`;
 }
 
@@ -107,14 +186,20 @@ class LogLine extends Component {
 		let onChannelClick = this.props.onChannelClick;
 		let onVerifyClick = this.props.onVerifyClick;
 
-		function createNick(nick) {
+		function createNick(nick, opts) {
 			return html`
 				<${Nick}
 					nick=${nick}
 					user=${server.users.get(nick)}
+					extraClass=${opts && opts.mention ? "mention" : ""}
+					displayed=${opts && opts.displayed}
 					onClick=${() => onNickClick(nick)}
 				/>
 			`;
+		}
+		let nickLookup = buildNickLookup(buf, server);
+		function renderText(text) {
+			return linkifyAndMention(text, nickLookup, createNick, onChannelClick);
 		}
 		function createChannel(channel) {
 			return html`
@@ -137,7 +222,7 @@ class LogLine extends Component {
 			if (ctcp) {
 				if (ctcp.command === "ACTION") {
 					lineClass = "me-tell";
-					content = html`* ${createNick(msg.prefix.name)} ${linkify(stripANSI(ctcp.param), onChannelClick)}`;
+					content = html`* ${createNick(msg.prefix.name)} ${renderText(stripANSI(ctcp.param))}`;
 				} else {
 					content = html`
 						${createNick(msg.prefix.name)} has sent a CTCP command: ${ctcp.command} ${ctcp.param}
@@ -152,7 +237,7 @@ class LogLine extends Component {
 				if (this.props.redacted) {
 					content = html`<i>This message has been deleted.</i>`;
 				} else {
-					content = html`${linkify(stripANSI(text), onChannelClick)}`;
+					content = html`${renderText(stripANSI(text))}`;
 					lineClass += " talk";
 				}
 				content = html`
@@ -289,7 +374,7 @@ class LogLine extends Component {
 			let topic = msg.params[1];
 			if (topic) {
 				content = html`
-					${createNick(msg.prefix.name)} changed the topic to: ${linkify(stripANSI(topic), onChannelClick)}
+					${createNick(msg.prefix.name)} changed the topic to: ${renderText(stripANSI(topic))}
 				`;
 			} else {
 				content = html`

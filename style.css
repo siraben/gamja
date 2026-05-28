@@ -624,6 +624,20 @@ button.danger:hover {
 	border-radius: 2px;
 }
 
+/* Inline @mention rendered with the mentioned nick's colour. */
+.nick.mention {
+	font-weight: 500;
+	background: color-mix(in srgb, currentColor 9%, transparent);
+	padding: 0 3px;
+	border-radius: 3px;
+	text-decoration: none;
+}
+
+.nick.mention:hover {
+	background: color-mix(in srgb, currentColor 18%, transparent);
+	text-decoration: none;
+}
+
 /* nick palette — preserved hue identity, adjusted saturation/lightness for legibility */
 #buffer .nick { font-weight: 500; }
 #buffer .nick-1  { color: #d35400; }
