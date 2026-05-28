@@ -1,4 +1,5 @@
 import { html, Component } from "../lib/index.js";
+import { BufferListSortMode } from "../state.js";
 
 export default class SettingsForm extends Component {
 	state = {};
@@ -8,6 +9,7 @@ export default class SettingsForm extends Component {
 
 		this.state.secondsInTimestamps = props.settings.secondsInTimestamps;
 		this.state.bufferEvents = props.settings.bufferEvents;
+		this.state.bufferListSort = props.settings.bufferListSort || BufferListSortMode.ALPHABETICAL;
 
 		this.handleInput = this.handleInput.bind(this);
 		this.handleSubmit = this.handleSubmit.bind(this);
@@ -95,6 +97,37 @@ export default class SettingsForm extends Component {
 						checked=${this.state.bufferEvents === "hide"}
 					/>
 					Hide chat events
+				</label>
+				<br/><br/>
+
+				<label>
+					<input
+						type="radio"
+						name="bufferListSort"
+						value=${BufferListSortMode.ALPHABETICAL}
+						checked=${this.state.bufferListSort === BufferListSortMode.ALPHABETICAL}
+					/>
+					Sort buffers alphabetically
+				</label>
+				<br/>
+				<label>
+					<input
+						type="radio"
+						name="bufferListSort"
+						value=${BufferListSortMode.UNREAD}
+						checked=${this.state.bufferListSort === BufferListSortMode.UNREAD}
+					/>
+					Sort unread buffers first
+				</label>
+				<br/>
+				<label>
+					<input
+						type="radio"
+						name="bufferListSort"
+						value=${BufferListSortMode.ACTIVITY}
+						checked=${this.state.bufferListSort === BufferListSortMode.ACTIVITY}
+					/>
+					Sort by recent activity
 				</label>
 				<br/><br/>
 

@@ -180,14 +180,52 @@ button.danger:hover {
 	overflow-y: auto;
 	scrollbar-width: thin;
 }
+#buffer-list li {
+	display: flex;
+	align-items: center;
+	min-width: 0;
+}
 #buffer-list li a {
-	display: inline-block;
-	width: 100%;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	flex: 1;
+	min-width: 0;
 	padding: 4px 12px;
 	box-sizing: border-box;
 	overflow: hidden;
-	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+#buffer-list .buffer-name {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+#buffer-list .buffer-unread-count {
+	flex: 0 0 auto;
+	min-width: 1.35rem;
+	padding: 0 0.35rem;
+	border-radius: 999px;
+	font-size: 0.75rem;
+	line-height: 1.35rem;
+	text-align: center;
+	color: var(--button-color);
+	background: var(--gray);
+}
+#buffer-list .buffer-favorite {
+	flex: 0 0 1.75rem;
+	min-width: 1.75rem;
+	min-height: 1.75rem;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	color: var(--gray);
+	background: transparent;
+}
+#buffer-list .buffer-favorite:hover,
+#buffer-list li.favorite .buffer-favorite {
+	color: var(--orange);
+	background: var(--buffer-button-background-hover);
 }
 #buffer-list li.error a {
 	color: var(--red);
@@ -198,12 +236,23 @@ button.danger:hover {
 #buffer-list li.unread-highlight a {
 	color: var(--purple);
 }
-#buffer-list li.active a {
+#buffer-list li.active {
 	color: var(--button-color);
 	background-color: var(--button-background);
 }
+#buffer-list li.active a,
+#buffer-list li.active .buffer-favorite {
+	color: inherit;
+}
+#buffer-list li.active .buffer-unread-count {
+	color: var(--button-background);
+	background: var(--button-color);
+}
 #buffer-list li:not(.type-server) a {
-	padding-left: 20px;
+	padding-left: 4px;
+}
+#buffer-list li.type-nick a {
+	padding-left: 2.25rem;
 }
 
 #member-list-header {

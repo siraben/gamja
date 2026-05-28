@@ -321,6 +321,7 @@ export default class App extends Component {
 		this.handleJoinSubmit = this.handleJoinSubmit.bind(this);
 		this.handleBufferListClick = this.handleBufferListClick.bind(this);
 		this.handleBufferListClose = this.handleBufferListClose.bind(this);
+		this.handleBufferFavorite = this.handleBufferFavorite.bind(this);
 		this.toggleBufferList = this.toggleBufferList.bind(this);
 		this.toggleMemberList = this.toggleMemberList.bind(this);
 		this.handleComposerSubmit = this.handleComposerSubmit.bind(this);
@@ -618,8 +619,17 @@ export default class App extends Component {
 
 		let stored = this.bufferStore.get({ name, server: client.params });
 		if (client.caps.enabled.has("draft/chathistory") && stored) {
-			this.setBufferState({ server: serverID, name }, { unread: stored.unread }, () => {
+			this.setBufferState({ server: serverID, name }, {
+				unread: stored.unread,
+				unreadCount: stored.unreadCount || (stored.unread === Unread.NONE ? 0 : 1),
+				favorite: stored.favorite || false,
+			}, () => {
 				this.updateDocumentTitle();
+			});
+		} else if (stored) {
+			this.setBufferState({ server: serverID, name }, {
+				unreadCount: stored.unreadCount || 0,
+				favorite: stored.favorite || false,
 			});
 		}
 
@@ -711,7 +721,10 @@ export default class App extends Component {
 			if (!buf) {
 				return;
 			}
-			return State.updateBuffer(state, buf.id, { unread: Unread.NONE });
+			return State.updateBuffer(state, buf.id, {
+				unread: Unread.NONE,
+				unreadCount: 0,
+			});
 		}, () => {
 			if (!buf) {
 				return;
@@ -725,17 +738,18 @@ export default class App extends Component {
 				}
 			}
 
+			let stored = {
+				name: buf.name,
+				server: client.params,
+				unread: Unread.NONE,
+				unreadCount: 0,
+			};
 			if (buf.messages.length > 0) {
 				let lastMsg = buf.messages[buf.messages.length - 1];
-				let stored = {
-					name: buf.name,
-					server: client.params,
-					unread: Unread.NONE,
-					receipts: { [ReceiptType.READ]: receiptFromMessage(lastMsg) },
-				};
-				if (this.bufferStore.put(stored)) {
-					this.sendReadReceipt(client, stored);
-				}
+				stored.receipts = { [ReceiptType.READ]: receiptFromMessage(lastMsg) };
+			}
+			if (this.bufferStore.put(stored) && stored.receipts) {
+				this.sendReadReceipt(client, stored);
 			}
 
 			this.updateDocumentTitle();
@@ -755,9 +769,7 @@ export default class App extends Component {
 
 		let numUnread = 0;
 		for (let buffer of this.state.buffers.values()) {
-			if (Unread.compare(buffer.unread, Unread.HIGHLIGHT) >= 0) {
-				numUnread++;
-			}
+			numUnread += buffer.unreadCount || 0;
 		}
 
 		let parts = [];
@@ -941,11 +953,15 @@ export default class App extends Component {
 		this.setBufferState(bufID, (buf) => {
 			// TODO: set unread if scrolled up
 			let unread = buf.unread;
+			let unreadCount = buf.unreadCount || 0;
 			let prevReadReceipt = buf.prevReadReceipt;
 			let receipts = { [ReceiptType.DELIVERED]: receiptFromMessage(msg) };
 
 			if (this.state.activeBuffer !== buf.id || !document.hasFocus()) {
 				unread = Unread.union(unread, msgUnread);
+				if (msgUnread !== Unread.NONE) {
+					unreadCount++;
+				}
 			} else {
 				receipts[ReceiptType.READ] = receiptFromMessage(msg);
 			}
@@ -959,14 +975,15 @@ export default class App extends Component {
 				name: buf.name,
 				server: client.params,
 				unread,
+				unreadCount,
 				receipts,
 			};
 			if (this.bufferStore.put(stored)) {
 				this.sendReadReceipt(client, stored);
 			}
-			return { unread, prevReadReceipt };
+			return { unread, unreadCount, prevReadReceipt };
 		}, () => {
-			if (msgUnread === Unread.HIGHLIGHT) {
+			if (msgUnread !== Unread.NONE) {
 				this.updateDocumentTitle();
 			}
 		});
@@ -1426,12 +1443,14 @@ export default class App extends Component {
 				}
 			}
 			let unread;
+			let unreadCount;
 			let closed = true;
 			this.setBufferState({ server: serverID, name: target }, (buf) => {
 				closed = false;
 
 				// Re-compute unread status
 				unread = Unread.NONE;
+				unreadCount = 0;
 				for (let i = buf.messages.length - 1; i >= 0; i--) {
 					let msg = buf.messages[i];
 					if (msg.command !== "PRIVMSG" && msg.command !== "NOTICE") {
@@ -1440,21 +1459,25 @@ export default class App extends Component {
 					if (isMessageBeforeReceipt(msg, readReceipt)) {
 						break;
 					}
+					if (client.isMyNick(msg.prefix.name)) {
+						continue;
+					}
 
 					if (msg.isHighlight || client.isMyNick(buf.name)) {
 						unread = Unread.HIGHLIGHT;
-						break;
+					} else {
+						unread = Unread.union(unread, Unread.MESSAGE);
 					}
-
-					unread = Unread.MESSAGE;
+					unreadCount++;
 				}
 
-				return { unread };
+				return { unread, unreadCount };
 			}, () => {
 				this.bufferStore.put({
 					name: target,
 					server: client.params,
 					unread,
+					unreadCount,
 					closed,
 					receipts: { [ReceiptType.READ]: readReceipt },
 				});
@@ -1895,6 +1918,27 @@ export default class App extends Component {
 	handleBufferListClose(id) {
 		this.close(id);
 		this.closeBufferList();
+	}
+
+	handleBufferFavorite(id, favorite) {
+		let buf;
+		this.setState((state) => {
+			buf = State.getBuffer(state, id);
+			if (!buf || buf.type !== BufferType.CHANNEL) {
+				return;
+			}
+			return State.updateBuffer(state, buf.id, { favorite });
+		}, () => {
+			if (!buf) {
+				return;
+			}
+			let client = this.clients.get(buf.server);
+			this.bufferStore.put({
+				name: buf.name,
+				server: client.params,
+				favorite,
+			});
+		});
 	}
 
 	toggleBufferList() {
@@ -2559,8 +2603,10 @@ export default class App extends Component {
 					servers=${this.state.servers}
 					bouncerNetworks=${this.state.bouncerNetworks}
 					activeBuffer=${this.state.activeBuffer}
+					settings=${this.state.settings}
 					onBufferClick=${this.handleBufferListClick}
 					onBufferClose=${this.handleBufferListClose}
+					onBufferFavorite=${this.handleBufferFavorite}
 				/>
 				<button
 					class="expander"

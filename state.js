@@ -41,6 +41,12 @@ export const BufferEventsDisplayMode = {
 	HIDE: "hide",
 };
 
+export const BufferListSortMode = {
+	ALPHABETICAL: "alphabetical",
+	UNREAD: "unread",
+	ACTIVITY: "activity",
+};
+
 export const SettingsContext = createContext("settings");
 
 export function getBufferURL(buf) {
@@ -164,7 +170,7 @@ function getBouncerNetworkNameFromBuffer(state, buffer) {
 
 /* Returns 1 if a should appear after b, -1 if a should appear before b, or
  * 0 otherwise. */
-function compareBuffers(state, a, b) {
+export function compareBuffers(state, a, b) {
 	if (a.server !== b.server) {
 		let aServerName = getBouncerNetworkNameFromBuffer(state, a);
 		let bServerName = getBouncerNetworkNameFromBuffer(state, b);
@@ -250,6 +256,7 @@ export const State = {
 			settings: {
 				secondsInTimestamps: true,
 				bufferEvents: BufferEventsDisplayMode.FOLD,
+				bufferListSort: BufferListSortMode.ALPHABETICAL,
 			},
 		};
 	},
@@ -378,6 +385,8 @@ export const State = {
 			messages: [],
 			redacted: new Set(),
 			unread: Unread.NONE,
+			unreadCount: 0,
+			favorite: false,
 			prevReadReceipt: null,
 		});
 		bufferList = bufferList.sort((a, b) => compareBuffers(state, a, b));

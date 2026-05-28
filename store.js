@@ -145,6 +145,18 @@ export class Buffer {
 			updated = true;
 		}
 
+		let unreadCount = prev.unreadCount || 0;
+		if (buf.unreadCount !== undefined && buf.unreadCount !== prev.unreadCount) {
+			unreadCount = buf.unreadCount;
+			updated = true;
+		}
+
+		let favorite = prev.favorite || false;
+		if (buf.favorite !== undefined && buf.favorite !== prev.favorite) {
+			favorite = buf.favorite;
+			updated = true;
+		}
+
 		let receipts = { ...prev.receipts };
 		if (buf.receipts) {
 			Object.keys(buf.receipts).forEach((k) => {
@@ -174,6 +186,8 @@ export class Buffer {
 		this.store.m.set(this.key(buf), {
 			name: buf.name,
 			unread,
+			unreadCount,
+			favorite,
 			receipts,
 			closed,
 			server: {
