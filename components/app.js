@@ -203,6 +203,7 @@ export default class App extends Component {
 		dialog: null,
 		dialogData: null,
 		error: null,
+		composerDrafts: new Map(),
 		openPanels: {
 			bufferList: false,
 			memberList: false,
@@ -239,6 +240,7 @@ export default class App extends Component {
 		this.toggleBufferList = this.toggleBufferList.bind(this);
 		this.toggleMemberList = this.toggleMemberList.bind(this);
 		this.handleComposerSubmit = this.handleComposerSubmit.bind(this);
+		this.handleComposerTextChange = this.handleComposerTextChange.bind(this);
 		this.handleChannelClick = this.handleChannelClick.bind(this);
 		this.handleNickClick = this.handleNickClick.bind(this);
 		this.autocomplete = this.autocomplete.bind(this);
@@ -1590,9 +1592,11 @@ export default class App extends Component {
 		case BufferType.SERVER:
 			this.setState((state) => {
 				let buffers = new Map(state.buffers);
+				let composerDrafts = new Map(state.composerDrafts);
 				for (let [id, b] of state.buffers) {
 					if (b.server === buf.server) {
 						buffers.delete(id);
+						composerDrafts.delete(id);
 					}
 				}
 
@@ -1605,7 +1609,7 @@ export default class App extends Component {
 					}
 				}
 
-				return { buffers, activeBuffer };
+				return { buffers, activeBuffer, composerDrafts };
 			});
 
 			let disconnectAll = client && !client.params.bouncerNetwork && client.caps.enabled.has("soju.im/bouncer-networks");
@@ -1650,8 +1654,10 @@ export default class App extends Component {
 			}
 			this.setState((state) => {
 				let buffers = new Map(state.buffers);
+				let composerDrafts = new Map(state.composerDrafts);
 				buffers.delete(buf.id);
-				return { buffers };
+				composerDrafts.delete(buf.id);
+				return { buffers, composerDrafts };
 			});
 
 			client.unmonitor(buf.name);
@@ -1663,6 +1669,34 @@ export default class App extends Component {
 			});
 			break;
 		}
+	}
+
+	setComposerDraft(bufferID, textOrUpdater) {
+		if (!bufferID) {
+			return;
+		}
+
+		this.setState((state) => {
+			if (!state.buffers.has(bufferID)) {
+				return;
+			}
+
+			let composerDrafts = new Map(state.composerDrafts);
+			let text = textOrUpdater;
+			if (typeof textOrUpdater === "function") {
+				text = textOrUpdater(composerDrafts.get(bufferID) || "");
+			}
+			if (text) {
+				composerDrafts.set(bufferID, text);
+			} else {
+				composerDrafts.delete(bufferID);
+			}
+			return { composerDrafts };
+		});
+	}
+
+	handleComposerTextChange(textOrUpdater, bufferID) {
+		this.setComposerDraft(bufferID || this.state.activeBuffer, textOrUpdater);
 	}
 
 	disconnectAll() {
@@ -1711,15 +1745,17 @@ export default class App extends Component {
 			return;
 		}
 
+		let buf = this.state.buffers.get(this.state.activeBuffer);
+		if (!buf) {
+			return;
+		}
+
+		this.setComposerDraft(buf.id, "");
+
 		if (text.startsWith("//")) {
 			text = text.slice(1);
 		} else if (text.startsWith("/")) {
 			this.executeCommand(text);
-			return;
-		}
-
-		let buf = this.state.buffers.get(this.state.activeBuffer);
-		if (!buf) {
 			return;
 		}
 
@@ -2373,11 +2409,15 @@ export default class App extends Component {
 
 		let commandOnly = false;
 		let privmsgMaxLen;
+		let composerText = "";
 		if (activeBuffer && activeBuffer.type === BufferType.SERVER) {
 			commandOnly = true;
 		} else if (activeBuffer) {
 			let client = this.clients.get(activeBuffer.server);
 			privmsgMaxLen = irc.getMaxPrivmsgLen(client.isupport, client.nick, activeBuffer.name);
+		}
+		if (activeBuffer) {
+			composerText = this.state.composerDrafts.get(activeBuffer.id) || "";
 		}
 
 		let app = html`
@@ -2425,6 +2465,9 @@ export default class App extends Component {
 			<${Composer}
 				ref=${this.composer}
 				client=${activeClient}
+				bufferID=${activeBuffer && activeBuffer.id}
+				text=${composerText}
+				onTextChange=${this.handleComposerTextChange}
 				readOnly=${composerReadOnly}
 				onSubmit=${this.handleComposerSubmit}
 				onError=${this.showError}

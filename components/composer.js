@@ -35,7 +35,6 @@ function encodeContentDisposition(filename) {
 
 export default class Composer extends Component {
 	state = {
-		text: "",
 		uploading: false,
 		dragging: false,
 	};
@@ -64,7 +63,11 @@ export default class Composer extends Component {
 	}
 
 	handleInput(event) {
-		this.setState({ [event.target.name]: event.target.value });
+		if (event.target.name === "text") {
+			this.props.onTextChange(event.target.value, this.props.bufferID);
+		} else if (event.target.name) {
+			this.setState({ [event.target.name]: event.target.value });
+		}
 
 		if (this.props.readOnly && event.target.name === "text" && !event.target.value) {
 			event.target.blur();
@@ -73,8 +76,7 @@ export default class Composer extends Component {
 
 	handleSubmit(event) {
 		event.preventDefault();
-		this.props.onSubmit(this.state.text);
-		this.setState({ text: "" });
+		this.props.onSubmit(this.props.text);
 	}
 
 	handleInputKeyDown(event) {
@@ -91,7 +93,7 @@ export default class Composer extends Component {
 		event.preventDefault();
 
 		let carretPos = input.selectionStart;
-		let text = this.state.text;
+		let text = this.props.text;
 		let autocomplete;
 		if (this.lastAutocomplete && this.lastAutocomplete.text === text && this.lastAutocomplete.carretPos === carretPos) {
 			autocomplete = this.lastAutocomplete;
@@ -159,7 +161,7 @@ export default class Composer extends Component {
 
 		this.lastAutocomplete = autocomplete;
 
-		this.setState({ text: autocomplete.text });
+		this.props.onTextChange(autocomplete.text, this.props.bufferID);
 	}
 
 	canUploadFiles() {
@@ -211,6 +213,7 @@ export default class Composer extends Component {
 	}
 
 	async uploadFileList(fileList) {
+		let bufferID = this.props.bufferID;
 		if (!this.uploadAbortController) {
 			this.uploadAbortController = new AbortController();
 		}
@@ -239,13 +242,12 @@ export default class Composer extends Component {
 			}
 		}
 
-		this.setState((state) => {
-			if (state.text) {
-				return { text: state.text + " " + urls.join(" ") };
-			} else {
-				return { text: urls.join(" ") };
+		this.props.onTextChange((text) => {
+			if (text) {
+				return text + " " + urls.join(" ");
 			}
-		});
+			return urls.join(" ");
+		}, bufferID);
 	}
 
 	async handleInputPaste(event) {
@@ -348,7 +350,7 @@ export default class Composer extends Component {
 			return;
 		}
 
-		if (this.state.text) {
+		if (this.props.text) {
 			return;
 		}
 
@@ -357,9 +359,8 @@ export default class Composer extends Component {
 		}
 
 		event.preventDefault();
-		this.setState({ text: event.key }, () => {
-			this.focus();
-		});
+		this.props.onTextChange(event.key, this.props.bufferID);
+		this.focus();
 	}
 
 	handleWindowPaste(event) {
@@ -388,7 +389,7 @@ export default class Composer extends Component {
 
 		this.textInput.current.focus();
 		this.textInput.current.setRangeText(text, undefined, undefined, "end");
-		this.setState({ text: this.textInput.current.value });
+		this.props.onTextChange(this.textInput.current.value, this.props.bufferID);
 	}
 
 	componentDidMount() {
@@ -411,7 +412,7 @@ export default class Composer extends Component {
 
 	render() {
 		let classes = [];
-		if (this.props.readOnly && !this.state.text) {
+		if (this.props.readOnly && !this.props.text) {
 			classes.push("read-only");
 		}
 		if (this.state.uploading) {
@@ -475,7 +476,7 @@ export default class Composer extends Component {
 					type="text"
 					name="text"
 					ref=${this.textInput}
-					value=${this.state.text}
+					value=${this.props.text}
 					autocomplete="off"
 					placeholder=${placeholder}
 					enterkeyhint="send"
