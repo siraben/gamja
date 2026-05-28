@@ -50,6 +50,8 @@ const configPromise = fetch("./config.json")
 	});
 
 const CHATHISTORY_MAX_SIZE = 4000;
+const NOTIFICATION_DEDUPE_KEY = "gamja_notificationDedup";
+const NOTIFICATION_DEDUPE_TTL = 15 * 60 * 1000;
 
 function isProduction() {
 	// NODE_ENV is set by the Parcel build system
@@ -121,9 +123,91 @@ function fillConnectParams(params) {
 	return params;
 }
 
-function showNotification(title, options) {
+function hashString(s) {
+	let hash = 5381;
+	for (let i = 0; i < s.length; i++) {
+		hash = (hash * 33) ^ s.charCodeAt(i);
+	}
+	return (hash >>> 0).toString(36);
+}
+
+function getNotificationMessageKey(client, bufName, msg) {
+	let msgID = msg.tags.msgid;
+	if (!msgID) {
+		let time = msg.tags.time;
+		if (msg.localTime) {
+			time = String(Math.floor(Date.parse(time) / 5000));
+		}
+		msgID = [
+			time,
+			msg.prefix && msg.prefix.name,
+			msg.command,
+			...msg.params,
+		].join("\0");
+	}
+
+	return hashString(JSON.stringify({
+		server: {
+			url: client.params.url,
+			bouncerNetwork: client.params.bouncerNetwork || "",
+			username: client.params.username || "",
+		},
+		buffer: client.cm(bufName),
+		message: msgID,
+	}));
+}
+
+function claimNotification(key) {
+	if (!key) {
+		return true;
+	}
+
+	let now = Date.now();
+	let expires = now + NOTIFICATION_DEDUPE_TTL;
+	let claims;
+	try {
+		claims = JSON.parse(localStorage.getItem(NOTIFICATION_DEDUPE_KEY) || "{}");
+	} catch (_err) {
+		claims = {};
+	}
+
+	for (let k of Object.keys(claims)) {
+		if (claims[k] <= now) {
+			delete claims[k];
+		}
+	}
+	if (claims[key] && claims[key] > now) {
+		return false;
+	}
+
+	claims[key] = expires;
+	localStorage.setItem(NOTIFICATION_DEDUPE_KEY, JSON.stringify(claims));
+	return true;
+}
+
+async function claimNotificationWithLock(key) {
+	if (!key) {
+		return true;
+	}
+
+	let lockName = "gamja-notification-" + key;
+	if (navigator.locks && navigator.locks.request) {
+		return await navigator.locks.request(lockName, () => claimNotification(key));
+	}
+	return claimNotification(key);
+}
+
+async function showNotification(title, options, dedupeKey) {
 	if (!window.Notification || Notification.permission !== "granted") {
 		return null;
+	}
+
+	try {
+		if (!await claimNotificationWithLock(dedupeKey)) {
+			return null;
+		}
+	} catch (err) {
+		console.error("Failed to claim notification: ", err);
 	}
 
 	// This can still fail due to:
@@ -750,6 +834,7 @@ export default class App extends Component {
 		}
 		if (!msg.tags.time) {
 			msg.tags.time = irc.formatDate(new Date());
+			msg.localTime = true;
 		}
 	}
 
@@ -789,13 +874,15 @@ export default class App extends Component {
 				if (client.isChannel(bufName)) {
 					title += " in " + bufName;
 				}
-				let notif = showNotification(title, {
+				showNotification(title, {
 					body: stripANSI(text),
 					requireInteraction: true,
 					tag: "msg,server=" + serverID + ",from=" + msg.prefix.name + ",to=" + bufName,
 					data: { bufferName: bufName, message: msg },
-				});
-				if (notif) {
+				}, getNotificationMessageKey(client, bufName, msg)).then((notif) => {
+					if (!notif) {
+						return;
+					}
 					notif.addEventListener("click", () => {
 						// TODO: scroll to message
 						this.switchBuffer({ server: serverID, name: bufName });
@@ -804,14 +891,14 @@ export default class App extends Component {
 						this.messageNotifications.delete(notif);
 					});
 					this.messageNotifications.add(notif);
-				}
+				});
 			}
 		}
 		if (msg.command === "INVITE" && client.isMyNick(msg.params[0])) {
 			msgUnread = Unread.HIGHLIGHT;
 
 			let channel = msg.params[1];
-			let notif = new Notification("Invitation to " + channel, {
+			showNotification("Invitation to " + channel, {
 				body: msg.prefix.name + " has invited you to " + channel,
 				requireInteraction: true,
 				tag: "invite,server=" + serverID + ",from=" + msg.prefix.name + ",channel=" + channel,
@@ -819,8 +906,10 @@ export default class App extends Component {
 					action: "accept",
 					title: "Accept",
 				}],
-			});
-			if (notif) {
+			}, getNotificationMessageKey(client, channel, msg)).then((notif) => {
+				if (!notif) {
+					return;
+				}
 				notif.addEventListener("click", (event) => {
 					if (event.action === "accept") {
 						let stored = {
@@ -837,7 +926,7 @@ export default class App extends Component {
 						this.switchBuffer({ server: serverID, name: bufName });
 					}
 				});
-			}
+			});
 		}
 
 		// Open a new buffer if the message doesn't come from me or is a
