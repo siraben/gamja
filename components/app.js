@@ -1293,18 +1293,31 @@ export default class App extends Component {
 		case irc.ERR_NOMOTD:
 			// These messages are used to indicate the end of the ISUPPORT list
 
-			// Restore opened channel and user buffers
+			// Restore opened channel and user buffers. Favorited channels
+			// auto-rejoin even if previously closed.
 			let join = [];
 			for (let buf of this.bufferStore.list(client.params)) {
-				if (buf.name === "*" || buf.closed) {
+				if (buf.name === "*") {
+					continue;
+				}
+				let isChannel = client.isChannel(buf.name);
+				let rejoinFavorite = buf.closed && buf.favorite && isChannel;
+				if (buf.closed && !rejoinFavorite) {
 					continue;
 				}
 
-				if (client.isChannel(buf.name)) {
+				if (isChannel) {
 					if (client.caps.enabled.has("soju.im/bouncer-networks")) {
 						continue;
 					}
 					join.push(buf.name);
+					if (rejoinFavorite) {
+						this.bufferStore.put({
+							name: buf.name,
+							server: client.params,
+							closed: false,
+						});
+					}
 				} else {
 					this.createBuffer(serverID, buf.name);
 					this.whoUserBuffer(buf.name, serverID);
