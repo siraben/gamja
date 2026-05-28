@@ -291,7 +291,7 @@ export default class App extends Component {
 		composerDrafts: new Map(),
 		openPanels: {
 			bufferList: false,
-			memberList: false,
+			memberList: !window.matchMedia("(max-width: 640px)").matches,
 		},
 	};
 	debug = !isProduction();

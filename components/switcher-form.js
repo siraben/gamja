@@ -24,10 +24,12 @@ class SwitcherItem extends Component {
 					class=${class_}
 					onClick=${this.handleClick}
 				>
+					<span class="buffer">
+						${this.props.buffer.name}
+					</span>
 					<span class="server">
 						${getServerName(this.props.server, this.props.bouncerNetwork)}
 					</span>
-					${this.props.buffer.name}
 				</a>
 			</li>
 		`;
@@ -93,7 +95,7 @@ export default class SwitcherForm extends Component {
 			return scores.get(b.id) - scores.get(a.id);
 		});
 
-		return l.slice(0, 20);
+		return l.slice(0, 12);
 	}
 
 	handleInput(event) {
@@ -150,6 +152,7 @@ export default class SwitcherForm extends Component {
 
 		return html`
 			<form
+				class="switcher-form"
 				onInput=${this.handleInput}
 				onSubmit=${this.handleSubmit}
 				onKeyDown=${this.handleKeyDown}
